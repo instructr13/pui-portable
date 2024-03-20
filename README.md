@@ -25,6 +25,8 @@ To build this project, you need to have JDK 17 or later installed.
 ./gradlew assemble
 ```
 
+All built JARs will be stored to `build/libs`.
+
 ## Running example application
 
 You don't need to have Processing installed, just run this command and run the built jar file:
