@@ -38,12 +38,13 @@ java -jar build/libs/pui-portable-1.0.0.jar
 
 ## License
 
-This project is licensed under the GPL-2.0 License **except** the PUI package, which is licensed under
-the MIT License - see the following files for details:
+This project is licensed under the GPL-2.0 License **except** the PUI package and Fraiselait Arduino, which are licensed
+under the MIT License - see the following files for details:
 
 - [LICENSE](./LICENSE) - GPL-2.0 License
 - [pui/LICENSE](./pui/LICENSE) - MIT License
+- [arduino/fraiselait/LICENSE](./arduino/fraiselait/LICENSE) - MIT License
 
-Reason: Fraiselait uses `processing.serial` package, which
+Reason: Fraiselait Processing uses `processing.serial` package, which
 is [licensed under the GPL-2.0 License](https://github.com/benfry/processing4/blob/main/LICENSE.md).
 Leinwand depends on Fraiselait, so it's also licensed under the GPL-2.0 License.
