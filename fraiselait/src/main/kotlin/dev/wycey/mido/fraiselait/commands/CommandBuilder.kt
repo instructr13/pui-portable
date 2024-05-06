@@ -3,6 +3,8 @@ package dev.wycey.mido.fraiselait.commands
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import dev.wycey.mido.fraiselait.models.JVMPinInformation
+import dev.wycey.mido.fraiselait.models.PinInformation
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 class CommandBuilder {
@@ -15,8 +17,12 @@ class CommandBuilder {
   @JsonProperty
   private var tone: Commands.Tone? = null
 
+  @JsonProperty
+  private var pins: PinInformation? = null
+
   @JsonIgnore
-  var flags = 0u // LE, 1st=changeColor, 2nd=changeLedBuiltin, 3rd=tone, 4th=noTone, 5th=toneWithDuration
+  var flags =
+    0u // LE, 1st=changeColor, 2nd=changeLedBuiltin, 3rd=tone, 4th=noTone, 5th=changePin, 6th=restoreDefaultPins
     private set
 
   private fun setFlagFor(position: Int) {
@@ -99,10 +105,50 @@ class CommandBuilder {
     return this
   }
 
+  fun changePin(pins: PinInformation): CommandBuilder {
+    this.pins = pins
+    setFlagFor(4)
+
+    return this
+  }
+
+  fun changePin(pins: JVMPinInformation): CommandBuilder {
+    this.pins = PinInformation.fromJVMPinInformation(pins)
+    setFlagFor(4)
+
+    return this
+  }
+
+  fun unsetChangePin(): CommandBuilder {
+    pins = null
+    unsetFlagFor(4)
+
+    return this
+  }
+
+  fun restoreDefaultPins(): CommandBuilder {
+    setFlagFor(5)
+
+    if (hasFlagFor(4)) {
+      pins = null
+
+      unsetFlagFor(4)
+    }
+
+    return this
+  }
+
+  fun unsetRestoreDefaultPins(): CommandBuilder {
+    unsetFlagFor(5)
+
+    return this
+  }
+
   internal fun merge(other: CommandBuilder): CommandBuilder {
     val newChangeColor = other.changeColor ?: changeColor
     val newChangeLedBuiltin = other.changeLedBuiltin ?: changeLedBuiltin
     val newTone = other.tone ?: tone
+    val newPins = other.pins ?: pins
 
     val newFlags = flags or other.flags
 
@@ -110,6 +156,7 @@ class CommandBuilder {
       changeColor = newChangeColor
       changeLedBuiltin = newChangeLedBuiltin
       tone = newTone
+      pins = newPins
       flags = newFlags
     }
   }

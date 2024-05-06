@@ -16,6 +16,9 @@ colormath = "3.4.+"
 # jackson
 jackson = "2.16.+"
 
+# msgpack-java
+msgpack-java = "0.9.+"
+
 # jssc
 jssc = "2.9.+"
 
@@ -40,6 +43,7 @@ jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-dataformat-msgpack = { module = "org.msgpack:jackson-dataformat-msgpack", version.ref = "msgpack-java" }
 
 # jssc
 jssc = { module = "io.github.java-native:jssc", version.ref = "jssc" }
@@ -58,4 +62,10 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 processing-serial = ["jssc"]
 
 # jackson
-jackson = ["jackson-core", "jackson-annotations", "jackson-databind", "jackson-module-kotlin"]
+jackson = [
+  "jackson-core",
+  "jackson-annotations",
+  "jackson-databind",
+  "jackson-module-kotlin",
+  "jackson-dataformat-msgpack"
+]

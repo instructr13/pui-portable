@@ -1,3 +1,5 @@
+version = "2.0.0"
+
 dependencies {
   implementation(libs.kotlinx.coroutines.core)
 
