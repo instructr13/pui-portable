@@ -4,7 +4,8 @@ Arduino communication program used by Fraiselait.
 
 ## Dependencies
 
-- ArduinoJson
+- [ArduinoJson](https://arduinojson.org/)
+- [ArduinoUniqueID](https://www.arduino.cc/reference/en/libraries/arduinouniqueid/)
 
 ## Running
 
