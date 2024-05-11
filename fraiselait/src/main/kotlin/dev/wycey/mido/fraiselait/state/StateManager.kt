@@ -1,98 +1,30 @@
 package dev.wycey.mido.fraiselait.state
 
 import dev.wycey.mido.fraiselait.SerialDevice
-import dev.wycey.mido.fraiselait.coroutines.sync.ReadWriteMutex
-import kotlinx.coroutines.*
+import dev.wycey.mido.fraiselait.models.DeviceState
 
 object StateManager {
-  private val lock = ReadWriteMutex()
-  private var internalState: FramboiseState? = null
+  internal var registeredDevice: SerialDevice? = null
+    set(value) {
+      field?.removeStateChangeListener(::markStateChange)
 
-  @OptIn(DelicateCoroutinesApi::class)
-  private val context = newFixedThreadPoolContext(2, "StateManager")
+      field = value
 
-  private val stateChangeListeners = mutableListOf<(FramboiseState?) -> Unit>()
-  private val portsChangeListeners = mutableListOf<(Array<String>) -> Unit>()
-
-  @Volatile
-  var shouldInvokeListeners = false
-
-  @Volatile
-  var shouldInvokePortsListeners = false
-
-  var state
-    get() =
-      runBlocking {
-        lock.withReadLock {
-          internalState
-        }
-      }
-    internal set(value) =
-      runBlocking {
-        val hasSameValue =
-          async {
-            lock.withReadLock {
-              internalState == value
-            }
-          }
-
-        if (hasSameValue.await()) {
-          return@runBlocking
-        }
-
-        lock.withWriteLock {
-          internalState = value
-
-          shouldInvokeListeners = true
-        }
-      }
-
-  init {
-    context.use {
-      CoroutineScope(it).launch {
-        withContext(context = Dispatchers.IO) {
-          var lastPorts = emptyArray<String>()
-
-          launch {
-            while (true) {
-              runBlocking {
-                val ports = SerialDevice.list()
-
-                if (lastPorts.contentEquals(ports).not()) {
-                  lastPorts = ports
-
-                  shouldInvokePortsListeners = true
-                }
-              }
-
-              delay(400)
-            }
-          }
-        }
-      }
+      value?.addStateChangeListener(::markStateChange)
     }
+
+  private val stateChangeListeners = mutableListOf<(DeviceState?) -> Unit>()
+
+  var state: DeviceState? = null
+    private set
+
+  private fun markStateChange(newState: DeviceState?) {
+    state = newState
+
+    stateChangeListeners.forEach { it(newState) }
   }
 
-  fun onDrawLoop() {
-    if (shouldInvokeListeners) {
-      shouldInvokeListeners = false
-      val state = state
-
-      stateChangeListeners.forEach { it(state) }
-    }
-
-    if (shouldInvokePortsListeners) {
-      shouldInvokePortsListeners = false
-
-      portsChangeListeners.forEach { it(SerialDevice.list()) }
-    }
-  }
-
-  fun addStateChangeListener(listener: (FramboiseState?) -> Unit) {
+  fun addStateChangeListener(listener: (DeviceState?) -> Unit) {
     stateChangeListeners.add(listener)
-  }
-
-  fun addPortsChangeListener(listener: (Array<String>) -> Unit) {
-    portsChangeListeners.add(listener)
   }
 }

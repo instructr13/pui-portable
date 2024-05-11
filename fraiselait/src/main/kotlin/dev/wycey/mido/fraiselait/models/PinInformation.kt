@@ -1,8 +1,10 @@
 package dev.wycey.mido.fraiselait.models
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class PinInformation
   @JsonCreator
   constructor(
@@ -33,19 +35,70 @@ data class PinInformation
     fun toJVMPinInformation() = JVMPinInformation.fromPinInformation(this)
   }
 
+data class NonNullPinInformation(
+  val speaker: UByte,
+  @JsonProperty("tact_switch")
+  val tactSwitch: UByte,
+  @JsonProperty("led_green")
+  val ledGreen: UByte,
+  @JsonProperty("led_blue")
+  val ledBlue: UByte,
+  @JsonProperty("led_red")
+  val ledRed: UByte,
+  @JsonProperty("light_sensor")
+  val lightSensor: UByte
+) {
+  fun toPinInformation() =
+    PinInformation(
+      speaker,
+      tactSwitch,
+      ledGreen,
+      ledBlue,
+      ledRed,
+      lightSensor
+    )
+
+  fun toJVMNonNullPinInformation() =
+    JVMNonNullPinInformation(
+      speaker.toShort(),
+      tactSwitch.toShort(),
+      ledGreen.toShort(),
+      ledBlue.toShort(),
+      ledRed.toShort(),
+      lightSensor.toShort()
+    )
+
+  fun merge(other: PinInformation) =
+    NonNullPinInformation(
+      other.speaker ?: speaker,
+      other.tactSwitch ?: tactSwitch,
+      other.ledGreen ?: ledGreen,
+      other.ledBlue ?: ledBlue,
+      other.ledRed ?: ledRed,
+      other.lightSensor ?: lightSensor
+    )
+}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 class JVMPinInformation
   @JsonCreator
   internal constructor(
+    @JvmField
     val speaker: Short? = null,
     @JsonProperty("tact_switch")
+    @JvmField
     val tactSwitch: Short? = null,
     @JsonProperty("led_green")
+    @JvmField
     val ledGreen: Short? = null,
     @JsonProperty("led_blue")
+    @JvmField
     val ledBlue: Short? = null,
     @JsonProperty("led_red")
+    @JvmField
     val ledRed: Short? = null,
     @JsonProperty("light_sensor")
+    @JvmField
     val lightSensor: Short? = null
   ) {
     companion object {
@@ -95,3 +148,43 @@ class JVMPinInformation
 
     fun toPinInformation() = PinInformation.fromJVMPinInformation(this)
   }
+
+data class JVMNonNullPinInformation(
+  @JvmField
+  val speaker: Short,
+  @JsonProperty("tact_switch")
+  @JvmField
+  val tactSwitch: Short,
+  @JsonProperty("led_green")
+  @JvmField
+  val ledGreen: Short,
+  @JsonProperty("led_blue")
+  @JvmField
+  val ledBlue: Short,
+  @JsonProperty("led_red")
+  @JvmField
+  val ledRed: Short,
+  @JsonProperty("light_sensor")
+  @JvmField
+  val lightSensor: Short
+) {
+  fun toNonNullPinInformation() =
+    NonNullPinInformation(
+      speaker.toUByte(),
+      tactSwitch.toUByte(),
+      ledGreen.toUByte(),
+      ledBlue.toUByte(),
+      ledRed.toUByte(),
+      lightSensor.toUByte()
+    )
+
+  fun toJVMPinInformation() =
+    JVMPinInformation(
+      speaker,
+      tactSwitch,
+      ledGreen,
+      ledBlue,
+      ledRed,
+      lightSensor
+    )
+}

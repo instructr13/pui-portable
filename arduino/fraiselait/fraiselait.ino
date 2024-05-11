@@ -13,7 +13,8 @@
 
 /* COMMANDS */
 
-#define MAGIC_COMMAND_NEGOTIATE 0xCAFEFACE
+#define MAGIC_COMMAND_NEGOTIATE  0xCAFEFACE
+#define MAGIC_COMMAND_DISCONNECT 0xCAFEDEAD
 
 /* SENSORS */
 
@@ -230,12 +231,12 @@ char* get_device_id() {
   if (!output_hash_got) {
     auto hash = XXH32((char*) UniqueID, UniqueIDsize, 0);
 
-    sprintf(id, "D%09x", id);
+    sprintf(id, "D%09x", hash);
 
     output_hash_got = true;
   }
 
-  return &id[0];
+  return id;
 }
 
 bool negotiated = false;
@@ -448,7 +449,7 @@ void change_pins(PinInformation new_pins) {
   }
 }
 
-void command_change_pin(JsonDocument &doc) {
+void command_change_pin(const JsonDocument &doc) {
   static const __FlashStringHelper* pin_names[6] = {
     F("speaker"),
     F("tact switch"),
@@ -457,6 +458,8 @@ void command_change_pin(JsonDocument &doc) {
     F("red led"),
     F("light sensor"),
   };
+
+  if (doc["pins"] == nullptr) return;
 
   uint8_t speaker_pin = doc["pins"]["speaker"] | pins.speaker;
   uint8_t tact_switch_pin = doc["pins"]["tact_switch"] | pins.tact_switch;
@@ -510,11 +513,21 @@ void command_restore_default_pins() {
   change_pins(PINS_DEFAULT);
 }
 
+void write_pins(JsonDocument &doc) {
+  doc["pins"]["speaker"] = pins.speaker;
+  doc["pins"]["tact_switch"] = pins.tact_switch;
+  doc["pins"]["led_green"] = pins.led_green;
+  doc["pins"]["led_blue"] = pins.led_blue;
+  doc["pins"]["led_red"] = pins.led_red;
+  doc["pins"]["light_sensor"] = pins.light_sensor;
+}
+
 JsonDocument make_device_info() {
   JsonDocument doc;
 
   doc["version"] = PROTOCOL_VERSION;
   doc["device_id"] = get_device_id();
+  write_pins(doc);
 
   return doc;
 }
@@ -581,9 +594,7 @@ bool negotiate() {
   char host_answer;
   auto timeout_start = millis();
 
-  Serial.readBytes(&host_answer, 1);
-
-  while (host_answer == -1 || host_answer == '\n') {
+  while (true) {
     if (millis() - timeout_start > ACK_TIMEOUT_MS) {
       send_error({ 2, F("Negotiation failed: Host answer timed out") });
 
@@ -593,34 +604,32 @@ bool negotiate() {
     if (Serial.available() > 0) {
       Serial.readBytes(&host_answer, 1);
     }
+
+    if (host_answer == '\0') continue;
+
+    if (host_answer == 'E') { // means that host reported an error
+      if (!deserialize(doc)) return false;
+
+      String message = F("Negotiation failed: ");
+
+      message.concat(F("Host sent error with code "));
+      uint8_t code = doc["code"];
+      message.concat(code);
+      message.concat(F(": "));
+      String message_ = doc["message"] | "[Empty message]";
+      message.concat(message_);
+
+      send_error({ 2, message });
+
+      return false;
+    }
+
+    if (host_answer == 'A') { // means acknowledgements
+      negotiated = true;
+
+      return true;
+    }
   }
-
-  if (host_answer == 'E') { // means that host reported an error
-    if (!deserialize(doc)) return false;
-
-    String message = F("Negotiation failed: ");
-
-    message.concat(F("Host sent error with code "));
-    uint8_t code = doc["code"];
-    message.concat(code);
-    message.concat(F(": "));
-    String message_ = doc["message"] | "[Empty message]";
-    message.concat(message_);
-
-    send_error({ 2, message });
-
-    return false;
-  }
-
-  if (host_answer == 'A') { // means acknowledgements
-    negotiated = true;
-
-    return true;
-  }
-
-  String message_ = F("Negotiation failed: invalid host answer received: ");
-
-  send_error({ 2, message_ + host_answer });
 
   return false;
 }
@@ -644,9 +653,17 @@ bool read_command() {
     }
 
     return negotiate();
+  } else if (command == MAGIC_COMMAND_NEGOTIATE) {
+    negotiated = false;
+
+    return negotiate();
+  } else if (command == MAGIC_COMMAND_DISCONNECT) { // Actually MAGIC_COMMAND_DISCONNECT + "\n"
+    negotiated = false;
+
+    return true;
   }
 
-  char* device_id_buf;
+  char device_id_buf[11];
 
   Serial.readBytes(device_id_buf, 10);
 

@@ -9,6 +9,7 @@ data class Command(private var innerObject: CommandBuilder) {
   }
 
   val flags get() = innerObject.flags
+  val pinChanges get() = innerObject.pins
 
   fun toDataBytes(
     mapper: ObjectMapper,

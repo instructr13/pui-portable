@@ -18,7 +18,7 @@ class CommandBuilder {
   private var tone: Commands.Tone? = null
 
   @JsonProperty
-  private var pins: PinInformation? = null
+  internal var pins: PinInformation? = null
 
   @JsonIgnore
   var flags =

@@ -3,9 +3,13 @@ package dev.wycey.mido.fraiselait.models
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class DeviceInformation
+internal data class DeviceInformation
   @JsonCreator
   constructor(
-    val version: UInt,
-    @JsonProperty("device_id") val deviceId: String
+    val version: Int,
+    @JsonProperty("device_id")
+    @JvmField
+    val deviceId: String,
+    @JvmField
+    val pins: JVMNonNullPinInformation
   )
