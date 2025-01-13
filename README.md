@@ -19,21 +19,20 @@ This project contains these packages:
 
 ## Building
 
-To build this project, you need to have JDK 17 or later installed.
+> [!IMPORTANT]
+> You need to extract the Processing serial library from the Processing IDE in order to build the project, named as
+> `org.processing.serial-4.3.jar` and put it in the `libs` directory.
 
 ```shell
 ./gradlew assemble
 ```
-
-All built JARs will be stored to `build/libs`.
 
 ## Running example application
 
 You don't need to have Processing installed, just run this command and run the built jar file:
 
 ```shell
-./gradlew pui-portable:run
-java -jar build/libs/pui-portable-1.0.0.jar
+./gradlew run
 ```
 
 ## License
