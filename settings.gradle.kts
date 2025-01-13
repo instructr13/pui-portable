@@ -1,3 +1,14 @@
 rootProject.name = "pui-portable"
 
-include("pui", "fraiselait", "leinwand")
+val builds = listOf(
+  "platforms",
+  "build-logic",
+
+  "pui",
+  "fraiselait",
+  "leinwand",
+
+  "example",
+)
+
+builds.forEach { includeBuild(it) }

@@ -1,20 +1,23 @@
 [versions]
 
 # Kotlin libraries
-kotlin = "1.9.23"
-kotlinx-coroutines = "1.8.+"
+kotlin = "2.1.0"
+kotlinx-coroutines = "1.10.+"
 
 # ktlint-gradle
-ktlint-gradle = "12.1.0"
+ktlint = "12.1.+"
+
+# shadow
+shadow = "8.3.+"
 
 # processing
 processing = "4.3"
 
 # colormath
-colormath = "3.4.+"
+colormath = "3.6.+"
 
 # jackson
-jackson = "2.16.+"
+jackson = "2.18.+"
 
 # msgpack-java
 msgpack-java = "0.9.+"
@@ -23,14 +26,18 @@ msgpack-java = "0.9.+"
 jssc = "2.9.+"
 
 # uibooster
-uibooster = "1.20.+"
+uibooster = "1.21.+"
 
 [libraries]
+
+# Plugins
+gradlePlugins-kotlin = { module = "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", version.ref = "kotlin" }
+gradlePlugins-ktlint = { module = "org.jlleitschuh.gradle.ktlint:org.jlleitschuh.gradle.ktlint.gradle.plugin", version.ref = "ktlint" }
+gradlePlugins-shadow = { module = "com.gradleup.shadow:com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }
 
 # Kotlin libraries
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 # processing
 processing-core = { module = "com.github.micycle1:processing-core-4", version.ref = "processing" }
@@ -50,11 +57,6 @@ jssc = { module = "io.github.java-native:jssc", version.ref = "jssc" }
 
 # uibooster
 uibooster = { module = "com.github.Milchreis:UiBooster", version.ref = "uibooster" }
-
-[plugins]
-
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 
 [bundles]
 
