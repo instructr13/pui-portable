@@ -1,6 +1,6 @@
 package dev.wycey.mido.pui.events.mouse
 
-class MouseActions {
+internal class MouseActions {
   companion object {
     const val PRESS = 1
     const val RELEASE = 2

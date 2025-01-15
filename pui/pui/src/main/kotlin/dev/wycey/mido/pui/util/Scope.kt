@@ -3,21 +3,21 @@ package dev.wycey.mido.pui.util
 import dev.wycey.mido.pui.layout.Point
 import processing.core.PApplet
 
-typealias ScopeConsumer = (Scope) -> Unit
+internal typealias ScopeConsumer = (Scope) -> Unit
 
-data class Scope(val applet: PApplet, val parent: Scope?) {
-  var absolutePosition = Point.ZERO
+public data class Scope(val applet: PApplet, val parent: Scope?) {
+  public var absolutePosition: Point = Point.ZERO
     private set
-  var relativePosition = Point.ZERO
+  public var relativePosition: Point = Point.ZERO
     private set
 
-  constructor(applet: PApplet) : this(applet, null)
-  constructor(parent: Scope) : this(parent.applet, parent)
-  constructor(parent: Scope, position: Point) : this(parent) {
+  public constructor(applet: PApplet) : this(applet, null)
+  public constructor(parent: Scope) : this(parent.applet, parent)
+  public constructor(parent: Scope, position: Point) : this(parent) {
     this.absolutePosition = position
   }
 
-  constructor(parent: Scope, position: Point, relativePosition: Point) : this(parent, position) {
+  public constructor(parent: Scope, position: Point, relativePosition: Point) : this(parent, position) {
     this.relativePosition = relativePosition
   }
 
@@ -26,13 +26,13 @@ data class Scope(val applet: PApplet, val parent: Scope?) {
       var scope = this
 
       while (scope.parent != null) {
-        scope = scope.parent!!
+        scope = scope.parent
       }
 
       return scope
     }
 
-  inline fun nestPositionalScope(
+  public inline fun nestPositionalScope(
     position: Point,
     consumer: ScopeConsumer
   ) {

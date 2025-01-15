@@ -1,5 +1,5 @@
 package dev.wycey.mido.pui.layout.constraints
 
-abstract class Constraints {
-  abstract val isTight: Boolean
+public abstract class Constraints {
+  public abstract val isTight: Boolean
 }

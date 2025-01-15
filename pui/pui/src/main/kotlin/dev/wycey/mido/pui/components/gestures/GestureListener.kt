@@ -8,7 +8,7 @@ import dev.wycey.mido.pui.events.mouse.gestures.GestureEventType
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.gestures.GestureEventRenderer
 
-class GestureListener
+public class GestureListener
   @JvmOverloads
   constructor(
     child: Component,
@@ -36,7 +36,10 @@ class GestureListener
         }
       }
 
-    override fun createRenderer(context: BuildContext) = GestureEventRenderer(createEventHandler())
+    override fun createRenderer(context: BuildContext): GestureEventRenderer =
+      GestureEventRenderer(
+        createEventHandler()
+      )
 
     override fun updateRenderer(
       context: BuildContext,

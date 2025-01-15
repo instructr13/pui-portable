@@ -9,14 +9,13 @@ import dev.wycey.mido.pui.renderer.delegations.RendererWithChild
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-class ViewRenderer(child: BoxRenderer? = null) : RendererWithChild<BoxRenderer>() {
+internal class ViewRenderer(child: BoxRenderer? = null) : RendererWithChild<BoxRenderer>() {
   init {
     super.child = child
     that = this
   }
 
-  lateinit var _configuration: ViewConfiguration
-
+  private lateinit var _configuration: ViewConfiguration
   var configuration: ViewConfiguration
     get() = _configuration
     set(value) {

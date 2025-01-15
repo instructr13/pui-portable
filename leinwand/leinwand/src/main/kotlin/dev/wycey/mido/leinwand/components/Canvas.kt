@@ -10,7 +10,11 @@ import dev.wycey.mido.pui.events.mouse.MouseButtons
 import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.util.processing.CursorType
 
-class Canvas(private val instanceId: Int, private val initialSize: Size = Size(600f, 600f), key: String? = null) :
+internal class Canvas(
+  private val instanceId: Int,
+  private val initialSize: Size = Size(600f, 600f),
+  key: String? = null
+) :
   StatelessComponent(key) {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!

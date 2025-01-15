@@ -2,7 +2,7 @@ package dev.wycey.mido.pui.components.basic
 
 import dev.wycey.mido.pui.components.base.Component
 
-abstract class StatefulComponentWithChild
+public abstract class StatefulComponentWithChild
   @JvmOverloads
   protected constructor(
     key: String?,

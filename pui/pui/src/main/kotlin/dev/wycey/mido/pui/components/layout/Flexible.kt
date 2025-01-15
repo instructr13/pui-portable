@@ -4,7 +4,7 @@ import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.rendering.ParentRendererDataComponent
 import dev.wycey.mido.pui.renderer.RendererObject
 
-open class Flexible
+public open class Flexible
   @JvmOverloads
   constructor(
     child: Component,

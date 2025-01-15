@@ -1,6 +1,6 @@
 package dev.wycey.mido.pui.events.mouse
 
-enum class MouseWheelType {
+public enum class MouseWheelType {
   Up,
   Down
 }

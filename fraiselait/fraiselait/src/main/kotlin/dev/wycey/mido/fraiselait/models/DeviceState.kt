@@ -3,7 +3,7 @@ package dev.wycey.mido.fraiselait.models
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class DeviceState
+public data class DeviceState
   @JsonCreator
   constructor(
     @JsonProperty("button_pressing")

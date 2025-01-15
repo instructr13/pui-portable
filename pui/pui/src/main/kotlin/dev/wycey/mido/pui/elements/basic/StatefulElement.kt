@@ -3,9 +3,9 @@ package dev.wycey.mido.pui.elements.basic
 import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.StatefulComponent
 
-class StatefulElement(component: StatefulComponent) : ComponentElement(component) {
-  var _state: StatefulComponent.State? = component.createState()
-  val state get() = _state!!
+public class StatefulElement(component: StatefulComponent) : ComponentElement(component) {
+  private var _state: StatefulComponent.State? = component.createState()
+  internal val state get(): StatefulComponent.State = _state!!
 
   private var rebuilt = false
 

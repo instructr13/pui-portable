@@ -1,10 +1,10 @@
 package dev.wycey.mido.pui.events.mouse
 
-class MouseButtons {
-  companion object {
-    const val NONE = 0
-    const val LEFT = 37
-    const val RIGHT = 39
-    const val CENTER = 3
+public class MouseButtons {
+  public companion object {
+    public const val NONE: Int = 0
+    public const val LEFT: Int = 37
+    public const val RIGHT: Int = 39
+    public const val CENTER: Int = 3
   }
 }

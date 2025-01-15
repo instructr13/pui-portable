@@ -7,7 +7,7 @@ import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.layout.PaddingRenderer
 
-class Padding
+public class Padding
   @JvmOverloads
   constructor(
     private val padding: EdgeInsets,
@@ -15,7 +15,7 @@ class Padding
     key: String? = null
   ) :
   SingleChildRendererComponent(key, child) {
-    override fun createRenderer(context: BuildContext) = PaddingRenderer(padding)
+    override fun createRenderer(context: BuildContext): PaddingRenderer = PaddingRenderer(padding)
 
     override fun updateRenderer(
       context: BuildContext,

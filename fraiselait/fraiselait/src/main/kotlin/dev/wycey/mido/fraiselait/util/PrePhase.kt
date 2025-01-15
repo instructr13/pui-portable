@@ -1,5 +1,5 @@
 package dev.wycey.mido.fraiselait.util
 
-interface PrePhase {
+internal interface PrePhase {
   fun pre()
 }

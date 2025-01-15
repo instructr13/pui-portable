@@ -7,9 +7,8 @@ import dev.wycey.mido.pui.elements.base.Element
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.data.ParentRendererData
 
-abstract class RendererElement<T : RendererObject>(component: RendererComponent) : Element(component) {
-  var _renderer: T? = null
-
+public abstract class RendererElement<T : RendererObject>(component: RendererComponent) : Element(component) {
+  private var _renderer: T? = null
   override val renderer: RendererObject
     get() = _renderer!!
 
@@ -97,7 +96,7 @@ abstract class RendererElement<T : RendererObject>(component: RendererComponent)
     val parentRendererDataElements = findAncestorParentRendererDataElements()
 
     for (parentRendererDataElement in parentRendererDataElements) {
-      _updateParentRendererData(parentRendererDataElement.component as ParentRendererDataComponent<ParentRendererData>)
+      updateParentRendererData(parentRendererDataElement.component as ParentRendererDataComponent<ParentRendererData>)
     }
   }
 
@@ -108,7 +107,9 @@ abstract class RendererElement<T : RendererObject>(component: RendererComponent)
     slot = null
   }
 
-  fun <T : ParentRendererData> _updateParentRendererData(parentRendererDataComponent: ParentRendererDataComponent<T>) {
+  internal fun <T : ParentRendererData> updateParentRendererData(
+    parentRendererDataComponent: ParentRendererDataComponent<T>
+  ) {
     parentRendererDataComponent.applyParentRendererData(renderer)
   }
 

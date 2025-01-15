@@ -11,7 +11,7 @@ import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.state.signals.untracked
 
-class HSLuvColorPicker
+public class HSLuvColorPicker
   @JvmOverloads
   constructor(
     private val onSetColor: (color: HSLuv) -> Unit,

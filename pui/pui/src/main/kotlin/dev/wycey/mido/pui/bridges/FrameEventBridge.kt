@@ -3,7 +3,7 @@ package dev.wycey.mido.pui.bridges
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 
-interface ProcessingFrameEventHandler {
+internal interface ProcessingFrameEventHandler {
   fun pre()
 
   fun draw()
@@ -11,7 +11,7 @@ interface ProcessingFrameEventHandler {
   fun post()
 }
 
-interface FrameEventBridgeContract {
+internal interface FrameEventBridgeContract {
   fun registerDrawEventLoop()
 
   fun onPreDraw(callback: () -> Unit)
@@ -23,14 +23,14 @@ interface FrameEventBridgeContract {
   fun onPostDraw(callback: () -> Unit)
 }
 
-class FrameEventBridge internal constructor() : FrameEventBridgeContract,
+public class FrameEventBridge internal constructor() : FrameEventBridgeContract,
   ProcessingFrameEventHandler, BridgeBase() {
-    companion object {
+    public companion object {
       @JvmField
-      var instanceNullable: FrameEventBridge? = null
+      internal var instanceNullable: FrameEventBridge? = null
 
       @JvmStatic
-      val instance get() = checkInstance(instanceNullable)
+      public val instance: FrameEventBridge get() = checkInstance(instanceNullable)
     }
 
     override fun initInstance() {
@@ -67,7 +67,7 @@ class FrameEventBridge internal constructor() : FrameEventBridgeContract,
     }
 
     private fun invokePreDrawCallbacks() {
-      while (!preDrawCallbackQueue.isEmpty()) {
+      while (!preDrawCallbackQueue.isEmpty) {
         preDrawCallbackQueue.poll()()
       }
     }
@@ -77,7 +77,7 @@ class FrameEventBridge internal constructor() : FrameEventBridgeContract,
     }
 
     private fun invokePostDrawCallbacks() {
-      while (!postDrawCallbackQueue.isEmpty()) {
+      while (!postDrawCallbackQueue.isEmpty) {
         postDrawCallbackQueue.poll()()
       }
     }

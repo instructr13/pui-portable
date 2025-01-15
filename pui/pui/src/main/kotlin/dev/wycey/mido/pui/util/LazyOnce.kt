@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-class LazyOnce<T> : ReadWriteProperty<Any, T> {
+internal class LazyOnce<T> : ReadWriteProperty<Any, T> {
   private val valueRef = AtomicReference<T>()
 
   override fun getValue(
@@ -12,6 +12,7 @@ class LazyOnce<T> : ReadWriteProperty<Any, T> {
     property: KProperty<*>
   ): T = valueRef.get() ?: throw IllegalAccessError("Value isn't initialized")
 
+  @Suppress("unused")
   operator fun getValue(
     nullThisRef: Nothing?,
     property: KProperty<*>
@@ -27,6 +28,7 @@ class LazyOnce<T> : ReadWriteProperty<Any, T> {
     }
   }
 
+  @Suppress("unused")
   operator fun setValue(
     nullThisRef: Nothing?,
     property: KProperty<*>,
@@ -38,4 +40,4 @@ class LazyOnce<T> : ReadWriteProperty<Any, T> {
   }
 }
 
-inline fun <reified T> lazyOnce() = LazyOnce<T>()
+internal inline fun <reified T> lazyOnce() = LazyOnce<T>()

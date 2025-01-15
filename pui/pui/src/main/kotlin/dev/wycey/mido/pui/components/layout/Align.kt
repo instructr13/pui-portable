@@ -8,7 +8,7 @@ import dev.wycey.mido.pui.layout.AlignmentFactor
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.box.PositionedBoxRenderer
 
-open class Align
+public open class Align
   @JvmOverloads
   constructor(
     private val alignment: AlignmentFactor = Alignment.center,
@@ -16,7 +16,7 @@ open class Align
     key: String? = null
   ) :
   SingleChildRendererComponent(key, child) {
-    override fun createRenderer(context: BuildContext) = PositionedBoxRenderer(alignment)
+    override fun createRenderer(context: BuildContext): PositionedBoxRenderer = PositionedBoxRenderer(alignment)
 
     override fun updateRenderer(
       context: BuildContext,

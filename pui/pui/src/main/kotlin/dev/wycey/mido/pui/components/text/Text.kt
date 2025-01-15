@@ -4,7 +4,7 @@ import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.StatelessComponent
 import dev.wycey.mido.pui.elements.base.BuildContext
 
-class Text
+public class Text
   @JvmOverloads
   constructor(
     private val style: TextStyle = TextStyle(),
@@ -12,7 +12,7 @@ class Text
     private val contentBuilder: () -> String
   ) : StatelessComponent(key) {
     @JvmOverloads
-    constructor(
+    public constructor(
       content: String,
       style: TextStyle = TextStyle(),
       key: String? = null

@@ -3,12 +3,12 @@ package dev.wycey.mido.pui.util
 import kotlin.reflect.KClass
 import kotlin.reflect.full.superclasses
 
-val KClass<*>.isInterface: Boolean
+internal val KClass<*>.isInterface: Boolean
   get() = java.isInterface
 
-val superclassCache = mutableMapOf<KClass<*>, KClass<*>>()
+private val superclassCache = mutableMapOf<KClass<*>, KClass<*>>()
 
-fun KClass<*>.hasSuperclassUntil(until: KClass<*>): Boolean {
+internal fun KClass<*>.hasSuperclassUntil(until: KClass<*>): Boolean {
   if (superclassCache[this] == until) {
     return true
   }

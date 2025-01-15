@@ -9,8 +9,8 @@ import dev.wycey.mido.pui.renderer.RenderGlobalContext
 import dev.wycey.mido.pui.renderer.box.BoxRenderer
 import dev.wycey.mido.pui.renderer.view.ViewRenderer
 
-class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxRenderer>(view) {
-  var _parentContext: RenderGlobalContext? = null
+internal class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxRenderer>(view) {
+  private var _parentContext: RenderGlobalContext? = null
   var child: Element? = null
   val context = RenderGlobalContext()
 
@@ -58,7 +58,7 @@ class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxR
     }
   }
 
-  private fun _updateChild() {
+  private fun updateChild() {
     val builtChild = (component as ViewComponent.InnerViewComponent).builder()
 
     child = updateChild(child, builtChild, null)
@@ -67,7 +67,7 @@ class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxR
   override fun performRebuild() {
     super.performRebuild()
 
-    _updateChild()
+    updateChild()
   }
 
   override fun activate() {
@@ -89,7 +89,7 @@ class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxR
   override fun update(newComponent: Component) {
     super.update(newComponent)
 
-    _updateChild()
+    updateChild()
   }
 
   override fun visitChildren(visitor: (element: Element) -> Unit) {
@@ -107,7 +107,7 @@ class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxR
     context.rootNode = renderer
 
     attachView()
-    _updateChild()
+    updateChild()
     renderer.prepareInitialFrame()
 
     println("View element mounted")

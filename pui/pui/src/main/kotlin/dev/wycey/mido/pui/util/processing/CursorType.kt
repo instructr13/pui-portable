@@ -1,6 +1,8 @@
 package dev.wycey.mido.pui.util.processing
 
-enum class CursorType {
+import processing.core.PApplet
+
+public enum class CursorType {
   Arrow,
   Cross,
   Hand,
@@ -10,11 +12,11 @@ enum class CursorType {
 
   ;
 
-  fun apply(applet: processing.core.PApplet) {
+  public fun apply(applet: PApplet) {
     applet.cursor(get())
   }
 
-  fun get() =
+  public fun get(): Int =
     when (this) {
       Arrow -> processing.core.PConstants.ARROW
       Cross -> processing.core.PConstants.CROSS

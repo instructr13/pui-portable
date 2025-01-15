@@ -13,7 +13,7 @@ import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.events.mouse.MouseButtons
 
-class LayerList(private val instanceId: Int) : StatefulComponent("layerList$instanceId") {
+internal class LayerList(private val instanceId: Int) : StatefulComponent("layerList$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
     val currentLayer by computed { handle.layers[handle.activeLayerIndex] }

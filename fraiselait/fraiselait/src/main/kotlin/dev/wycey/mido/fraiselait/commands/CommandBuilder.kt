@@ -7,7 +7,7 @@ import dev.wycey.mido.fraiselait.models.JVMPinInformation
 import dev.wycey.mido.fraiselait.models.PinInformation
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-class CommandBuilder {
+public class CommandBuilder {
   @JsonProperty("color")
   private var changeColor: Commands.ChangeColor? = null
 
@@ -21,7 +21,7 @@ class CommandBuilder {
   internal var pins: PinInformation? = null
 
   @JsonIgnore
-  var flags =
+  public var flags: UInt =
     0u // LE, 1st=changeColor, 2nd=changeLedBuiltin, 3rd=tone, 4th=noTone, 5th=changePin, 6th=restoreDefaultPins
     private set
 
@@ -35,7 +35,7 @@ class CommandBuilder {
 
   private fun hasFlagFor(position: Int) = flags and (1u shl position) != 0u
 
-  fun changeColor(
+  public fun changeColor(
     r: Int,
     g: Int,
     b: Int
@@ -46,21 +46,21 @@ class CommandBuilder {
     return this
   }
 
-  fun unsetChangeColor(): CommandBuilder {
+  public fun unsetChangeColor(): CommandBuilder {
     changeColor = null
     unsetFlagFor(0)
 
     return this
   }
 
-  fun changeLedBuiltin(state: Boolean): CommandBuilder {
+  public fun changeLedBuiltin(state: Boolean): CommandBuilder {
     changeLedBuiltin = state
     setFlagFor(1)
 
     return this
   }
 
-  fun unsetChangeLedBuiltin(): CommandBuilder {
+  public fun unsetChangeLedBuiltin(): CommandBuilder {
     changeLedBuiltin = null
     unsetFlagFor(1)
 
@@ -68,7 +68,7 @@ class CommandBuilder {
   }
 
   @JvmOverloads
-  fun tone(
+  public fun tone(
     frequency: Int,
     duration: Long? = null
   ): CommandBuilder {
@@ -80,14 +80,14 @@ class CommandBuilder {
     return this
   }
 
-  fun unsetTone(): CommandBuilder {
+  public fun unsetTone(): CommandBuilder {
     tone = null
     unsetFlagFor(2)
 
     return this
   }
 
-  fun noTone(): CommandBuilder {
+  public fun noTone(): CommandBuilder {
     setFlagFor(3)
 
     if (hasFlagFor(2)) {
@@ -99,34 +99,34 @@ class CommandBuilder {
     return this
   }
 
-  fun unsetNoTone(): CommandBuilder {
+  public fun unsetNoTone(): CommandBuilder {
     unsetFlagFor(3)
 
     return this
   }
 
-  fun changePin(pins: PinInformation): CommandBuilder {
+  public fun changePin(pins: PinInformation): CommandBuilder {
     this.pins = pins
     setFlagFor(4)
 
     return this
   }
 
-  fun changePin(pins: JVMPinInformation): CommandBuilder {
+  public fun changePin(pins: JVMPinInformation): CommandBuilder {
     this.pins = PinInformation.fromJVMPinInformation(pins)
     setFlagFor(4)
 
     return this
   }
 
-  fun unsetChangePin(): CommandBuilder {
+  public fun unsetChangePin(): CommandBuilder {
     pins = null
     unsetFlagFor(4)
 
     return this
   }
 
-  fun restoreDefaultPins(): CommandBuilder {
+  public fun restoreDefaultPins(): CommandBuilder {
     setFlagFor(5)
 
     if (hasFlagFor(4)) {
@@ -138,7 +138,7 @@ class CommandBuilder {
     return this
   }
 
-  fun unsetRestoreDefaultPins(): CommandBuilder {
+  public fun unsetRestoreDefaultPins(): CommandBuilder {
     unsetFlagFor(5)
 
     return this
@@ -161,5 +161,5 @@ class CommandBuilder {
     }
   }
 
-  fun build() = Command(this)
+  public fun build(): Command = Command(this)
 }

@@ -8,7 +8,7 @@ import dev.wycey.mido.pui.components.layout.ZStack
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.Offstage
 
-class Tabs
+public class Tabs
   @JvmOverloads
   constructor(
     private val tabs: List<Pair<String, Component?>>,

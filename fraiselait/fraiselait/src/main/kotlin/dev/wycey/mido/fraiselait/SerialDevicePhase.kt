@@ -1,6 +1,6 @@
 package dev.wycey.mido.fraiselait
 
-enum class SerialDevicePhase {
+public enum class SerialDevicePhase {
   NEW,
   RUNNING,
   PAUSED,

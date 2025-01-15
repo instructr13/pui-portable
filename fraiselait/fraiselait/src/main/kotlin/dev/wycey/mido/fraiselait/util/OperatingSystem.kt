@@ -1,6 +1,6 @@
 package dev.wycey.mido.fraiselait.util
 
-enum class OperatingSystem {
+internal enum class OperatingSystem {
   WINDOWS,
   LINUX,
   MACOS,
@@ -8,7 +8,7 @@ enum class OperatingSystem {
   UNKNOWN
 }
 
-fun getOperatingSystem(): OperatingSystem {
+internal fun getOperatingSystem(): OperatingSystem {
   val os = System.getProperty("os.name").lowercase()
 
   return when {

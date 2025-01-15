@@ -14,8 +14,8 @@ internal typealias Unsubscribe = () -> Unit
 private typealias Getter<T> = () -> T
 private typealias Setter<T> = (T) -> Unit
 
-open class Signal<T>(var _value: T) : ReadWriteProperty<Any, T> {
-  companion object {
+public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> {
+  internal companion object {
     @JvmField
     val subscriptionCalls = ArrayDeque<SubscriptionType>()
 
@@ -26,12 +26,12 @@ open class Signal<T>(var _value: T) : ReadWriteProperty<Any, T> {
     fun <T> valueOfSignal(signal: Signal<T>): T = signal._value
   }
 
-  var parentSignalData: ParentSignalData? = null
-  var shouldSubscribe = true
+  internal var parentSignalData: ParentSignalData? = null
+  internal var shouldSubscribe = true
 
   private val subscribers = mutableSetOf<Subscriber>()
 
-  fun subscribe(subscriber: Subscriber): Unsubscribe {
+  internal fun subscribe(subscriber: Subscriber): Unsubscribe {
     subscribers.add(subscriber)
 
     return {
@@ -64,7 +64,8 @@ open class Signal<T>(var _value: T) : ReadWriteProperty<Any, T> {
       _value
     }
 
-  operator fun getValue(
+  @Suppress("unused")
+  public operator fun getValue(
     thisRef: Nothing?,
     property: KProperty<*>
   ): T = getter()()
@@ -74,7 +75,7 @@ open class Signal<T>(var _value: T) : ReadWriteProperty<Any, T> {
     property: KProperty<*>
   ): T = getter()()
 
-  fun getValue(): T = getter()()
+  public fun getValue(): T = getter()()
 
   private fun setter(): Setter<T> =
     innerSetter@{
@@ -120,25 +121,26 @@ open class Signal<T>(var _value: T) : ReadWriteProperty<Any, T> {
       SignalContext.rootContext?.subscriber?.invoke()
     }
 
-  operator fun setValue(
+  @Suppress("unused")
+  public operator fun setValue(
     thisRef: Nothing?,
     property: KProperty<*>,
     value: T
-  ) = setter()(value)
+  ): Unit = setter()(value)
 
   override fun setValue(
     thisRef: Any,
     property: KProperty<*>,
     value: T
-  ) = setter()(value)
+  ): Unit = setter()(value)
 
-  fun setValue(value: T) = setter()(value)
+  public fun setValue(value: T): Unit = setter()(value)
 
-  fun dispose() {
+  public fun dispose() {
     subscribers.clear()
   }
 
-  open fun onNotify(value: T) {
+  internal open fun onNotify(value: T) {
     this._value = value
   }
 
@@ -147,4 +149,4 @@ open class Signal<T>(var _value: T) : ReadWriteProperty<Any, T> {
   }
 }
 
-inline fun <reified T> signal(value: T) = Signal(value)
+public inline fun <reified T> signal(value: T): Signal<T> = Signal(value)

@@ -5,7 +5,7 @@ import dev.wycey.mido.pui.components.text.TextStyle
 import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.renderer.BorderRadius
 
-object Styles {
+internal object Styles {
   val title =
     TextStyle(
       color = 0xffc3cdd1.toInt(),

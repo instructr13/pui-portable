@@ -5,7 +5,7 @@ import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.RendererVisitor
 import dev.wycey.mido.pui.util.hasSuperclassUntil
 
-interface RendererWithChildContract<ChildType : RendererObject> {
+internal interface RendererWithChildContract<ChildType : RendererObject> {
   var child: ChildType?
 
   fun attach(context: RenderGlobalContext)
@@ -17,7 +17,8 @@ interface RendererWithChildContract<ChildType : RendererObject> {
   fun visitChildren(visitor: RendererVisitor)
 }
 
-open class RendererWithChild<ChildType : RendererObject> : RendererWithChildContract<ChildType>, RendererObject() {
+public open class RendererWithChild<ChildType : RendererObject> : RendererWithChildContract<ChildType>,
+  RendererObject() {
   internal lateinit var that: RendererObject
 
   private val safeThat: RendererObject?

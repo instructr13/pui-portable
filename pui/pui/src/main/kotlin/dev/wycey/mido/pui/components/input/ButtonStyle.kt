@@ -3,7 +3,7 @@ package dev.wycey.mido.pui.components.input
 import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.renderer.BorderRadius
 
-data class ButtonStyle
+public data class ButtonStyle
   @JvmOverloads
   constructor(
     val disabled: Boolean = false,

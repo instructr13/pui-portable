@@ -1,8 +1,8 @@
 package dev.wycey.mido.pui.events
 
-open class EventArgs protected constructor() {
-  companion object {
+public open class EventArgs protected constructor() {
+  public companion object {
     @JvmField
-    val EMPTY = EventArgs()
+    public val EMPTY: EventArgs = EventArgs()
   }
 }

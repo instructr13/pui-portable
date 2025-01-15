@@ -5,10 +5,10 @@ import dev.wycey.mido.pui.events.key.KeyEventArgs
 import dev.wycey.mido.pui.events.key.KeyEventType
 import dev.wycey.mido.pui.renderer.box.ProxyBoxRenderer
 
-class GlobalKeyEventRenderer(
-  var onKeyPress: ((e: KeyEventArgs) -> Unit)? = null,
-  var onKeyRelease: ((e: KeyEventArgs) -> Unit)? = null,
-  var onKeyType: ((e: KeyEventArgs) -> Unit)? = null
+public class GlobalKeyEventRenderer(
+  public var onKeyPress: ((e: KeyEventArgs) -> Unit)? = null,
+  public var onKeyRelease: ((e: KeyEventArgs) -> Unit)? = null,
+  public var onKeyType: ((e: KeyEventArgs) -> Unit)? = null
 ) : ProxyBoxRenderer() {
   private val fn: (KeyEventArgs, KeyEventType) -> Unit = { e, type ->
     when (type) {

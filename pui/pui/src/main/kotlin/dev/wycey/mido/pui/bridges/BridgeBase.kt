@@ -4,21 +4,21 @@ import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.lazyOnce
 import processing.core.PApplet
 
-interface BridgeBaseContract {
+internal interface BridgeBaseContract {
   fun initInstance()
 }
 
-abstract class BridgeBase : BridgeBaseContract {
-  companion object {
+public abstract class BridgeBase : BridgeBaseContract {
+  public companion object {
     @JvmStatic
-    fun <T : BridgeBase> checkInstance(instance: T?): T =
+    internal fun <T : BridgeBase> checkInstance(instance: T?): T =
       instance ?: throw NullPointerException("Bridge instance is null")
 
     @JvmStatic
-    var applet: PApplet by lazyOnce()
+    public var applet: PApplet by lazyOnce()
 
     @JvmStatic
-    val rootScope: Scope by lazy {
+    internal val rootScope: Scope by lazy {
       Scope(applet)
     }
   }
@@ -26,7 +26,7 @@ abstract class BridgeBase : BridgeBaseContract {
   override fun initInstance() {}
 }
 
-abstract class BridgeBaseWithAutoInit : BridgeBase() {
+public abstract class BridgeBaseWithAutoInit : BridgeBase() {
   init {
     this.initInstance()
   }

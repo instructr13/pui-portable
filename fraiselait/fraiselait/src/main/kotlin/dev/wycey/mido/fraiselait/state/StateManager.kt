@@ -3,7 +3,7 @@ package dev.wycey.mido.fraiselait.state
 import dev.wycey.mido.fraiselait.SerialDevice
 import dev.wycey.mido.fraiselait.models.DeviceState
 
-object StateManager {
+public object StateManager {
   internal var registeredDevice: SerialDevice? = null
     set(value) {
       field?.removeStateChangeListener(::markStateChange)
@@ -15,7 +15,7 @@ object StateManager {
 
   private val stateChangeListeners = mutableListOf<(DeviceState?) -> Unit>()
 
-  var state: DeviceState? = null
+  public var state: DeviceState? = null
     private set
 
   private fun markStateChange(newState: DeviceState?) {
@@ -24,7 +24,7 @@ object StateManager {
     stateChangeListeners.forEach { it(newState) }
   }
 
-  fun addStateChangeListener(listener: (DeviceState?) -> Unit) {
+  public fun addStateChangeListener(listener: (DeviceState?) -> Unit) {
     stateChangeListeners.add(listener)
   }
 }

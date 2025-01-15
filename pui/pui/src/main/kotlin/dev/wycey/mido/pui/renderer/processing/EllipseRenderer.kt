@@ -8,13 +8,13 @@ import dev.wycey.mido.pui.util.processing.RenderMode
 import dev.wycey.mido.pui.util.processing.StrokeCaps
 import dev.wycey.mido.pui.util.processing.StrokeJoins
 
-class EllipseRenderer(
-  var fill: Int = 0x00FFFFFF,
-  var stroke: Int = 0x00FFFFFF,
-  var strokeWeight: Float? = null,
-  var strokeCap: StrokeCaps? = null,
-  var strokeJoin: StrokeJoins? = null,
-  var mode: RenderMode? = null
+public class EllipseRenderer(
+  public var fill: Int = 0x00FFFFFF,
+  public var stroke: Int = 0x00FFFFFF,
+  public var strokeWeight: Float? = null,
+  public var strokeCap: StrokeCaps? = null,
+  public var strokeJoin: StrokeJoins? = null,
+  public var mode: RenderMode? = null
 ) : ProxyBoxRenderer() {
   override fun paint(
     d: AppletDrawer,

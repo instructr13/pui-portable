@@ -3,7 +3,7 @@ package dev.wycey.mido.pui.events.mouse
 import dev.wycey.mido.pui.events.EventArgs
 import processing.event.MouseEvent
 
-data class MouseEventArgs(
+public data class MouseEventArgs(
   val mouseX: Int,
   val mouseY: Int,
   val pmouseX: Int,
@@ -13,7 +13,7 @@ data class MouseEventArgs(
   val count: Int
 ) : EventArgs()
 
-fun MouseEvent.toEventArgs(
+public fun MouseEvent.toEventArgs(
   pmouseX: Int,
   pmouseY: Int
 ): MouseEventArgs =

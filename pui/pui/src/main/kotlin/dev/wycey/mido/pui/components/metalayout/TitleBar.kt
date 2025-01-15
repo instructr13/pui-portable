@@ -12,7 +12,7 @@ import dev.wycey.mido.pui.components.text.TextStyle
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.EdgeInsets
 
-class TitleBar
+public class TitleBar
   @JvmOverloads
   constructor(
     private val title: String,
@@ -22,7 +22,7 @@ class TitleBar
     private val additionalArea: (BuildContext) -> Array<Component> = { emptyArray() },
     key: String? = null
   ) : StatelessComponent(key) {
-    override fun build(context: BuildContext) =
+    override fun build(context: BuildContext): Box =
       Box(
         Padding(
           EdgeInsets.symmetric(20f, 20f),

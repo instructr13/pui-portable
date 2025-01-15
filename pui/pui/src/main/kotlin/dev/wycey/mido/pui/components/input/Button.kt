@@ -13,7 +13,7 @@ import dev.wycey.mido.pui.events.mouse.gestures.GestureEventArgs
 import dev.wycey.mido.pui.events.mouse.gestures.GestureEventType
 import dev.wycey.mido.pui.util.processing.CursorType
 
-class Button
+public class Button
   @JvmOverloads
   constructor(
     private val width: Float? = null,
@@ -26,7 +26,7 @@ class Button
     childBuilder: (() -> Component)? = null
   ) : StatefulComponentWithChild(key, childBuilder) {
     @JvmOverloads
-    constructor(
+    public constructor(
       child: Component,
       style: ButtonStyle = ButtonStyle(),
       width: Float? = null,

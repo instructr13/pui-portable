@@ -2,7 +2,7 @@ package dev.wycey.mido.pui.tree
 
 import java.util.*
 
-data class TreeNode<T>
+public data class TreeNode<T>
   @JvmOverloads
   constructor(
     internal val id: Int = -1,

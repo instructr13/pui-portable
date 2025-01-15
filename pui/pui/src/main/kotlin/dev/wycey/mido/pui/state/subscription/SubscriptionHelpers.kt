@@ -2,7 +2,7 @@ package dev.wycey.mido.pui.state.subscription
 
 import dev.wycey.mido.pui.state.signals.Signal
 
-fun <T> wrapWithSubscriptionCallStack(
+public fun <T> wrapWithSubscriptionCallStack(
   subscriptionType: SubscriptionType,
   subscription: () -> T
 ): () -> T =
@@ -15,7 +15,7 @@ fun <T> wrapWithSubscriptionCallStack(
     }
   }
 
-fun <T> runWithSubscriptionCallStack(
+public fun <T> runWithSubscriptionCallStack(
   subscriptionType: SubscriptionType,
   subscription: () -> T
 ): T = wrapWithSubscriptionCallStack(subscriptionType, subscription)()

@@ -9,15 +9,15 @@ import dev.wycey.mido.pui.util.processing.RenderMode
 import dev.wycey.mido.pui.util.processing.StrokeCaps
 import dev.wycey.mido.pui.util.processing.StrokeJoins
 
-class ComponentBoxRenderer(
-  var fill: Int = 0x00FFFFFF,
-  var stroke: Int = 0x00FFFFFF,
-  var strokeWeight: Float? = null,
-  var strokeCap: StrokeCaps? = null,
-  var strokeJoin: StrokeJoins? = null,
-  var mode: RenderMode? = null,
-  var borderRadius: BorderRadius = BorderRadius.ZERO,
-  var additionalPaint: ((d: AppletDrawer, currentScope: Scope, size: Size) -> Unit)? = null
+public class ComponentBoxRenderer(
+  public var fill: Int = 0x00FFFFFF,
+  public var stroke: Int = 0x00FFFFFF,
+  public var strokeWeight: Float? = null,
+  public var strokeCap: StrokeCaps? = null,
+  public var strokeJoin: StrokeJoins? = null,
+  public var mode: RenderMode? = null,
+  public var borderRadius: BorderRadius = BorderRadius.ZERO,
+  public var additionalPaint: ((d: AppletDrawer, currentScope: Scope, size: Size) -> Unit)? = null
 ) : ProxyBoxRenderer() {
   override fun paint(
     d: AppletDrawer,

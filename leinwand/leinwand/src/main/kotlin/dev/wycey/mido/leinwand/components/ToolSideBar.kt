@@ -12,7 +12,7 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.layout.Size
 
-class ToolSideBar(
+internal class ToolSideBar(
   private val instanceId: Int,
   private val initialSize: Size = Size(300f, 620f)
 ) : StatelessComponent("toolSideBar$instanceId") {

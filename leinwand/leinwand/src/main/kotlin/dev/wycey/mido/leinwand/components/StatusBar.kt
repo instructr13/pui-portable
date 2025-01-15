@@ -10,7 +10,7 @@ import dev.wycey.mido.pui.components.text.TextStyle
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.EdgeInsets
 
-class StatusBar(private val instanceId: Int) : StatefulComponent("statusBar$instanceId") {
+internal class StatusBar(private val instanceId: Int) : StatefulComponent("statusBar$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 

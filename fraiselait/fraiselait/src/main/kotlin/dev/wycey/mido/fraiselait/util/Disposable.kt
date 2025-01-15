@@ -1,5 +1,5 @@
 package dev.wycey.mido.fraiselait.util
 
-interface Disposable {
+internal interface Disposable {
   fun dispose()
 }

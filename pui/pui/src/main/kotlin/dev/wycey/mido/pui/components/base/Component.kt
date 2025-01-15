@@ -2,10 +2,10 @@ package dev.wycey.mido.pui.components.base
 
 import dev.wycey.mido.pui.elements.base.Element
 
-abstract class Component(val key: String? = null) {
-  companion object {
+public abstract class Component(public val key: String? = null) {
+  public companion object {
     @JvmStatic
-    fun canUpdate(
+    public fun canUpdate(
       oldComponent: Component,
       newComponent: Component
     ): Boolean {
@@ -14,5 +14,5 @@ abstract class Component(val key: String? = null) {
     }
   }
 
-  abstract fun createElement(): Element
+  internal abstract fun createElement(): Element
 }

@@ -11,7 +11,7 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.events.mouse.MouseButtons
 import dev.wycey.mido.pui.layout.EdgeInsets
 
-class BrushSelector(private val instanceId: Int) : StatefulComponent("brushSelector$instanceId") {
+internal class BrushSelector(private val instanceId: Int) : StatefulComponent("brushSelector$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 

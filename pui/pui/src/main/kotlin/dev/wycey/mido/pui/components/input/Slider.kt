@@ -17,10 +17,10 @@ import dev.wycey.mido.pui.state.signals.untracked
 import dev.wycey.mido.pui.util.processing.CursorType
 import kotlin.time.Duration.Companion.milliseconds
 
-class Slider
+public class Slider
   @JvmOverloads
   constructor(
-    val sliderValueBuilder: () -> Float,
+    private val sliderValueBuilder: () -> Float,
     private val min: Float = 0f,
     private val max: Float = 100f,
     private val step: Float = 1f,
@@ -38,7 +38,7 @@ class Slider
     private val onChange: ((Float) -> Unit)? = null
   ) : StatefulComponent(key) {
     @JvmOverloads
-    constructor(
+    public constructor(
       sliderValue: Float,
       min: Float = 0f,
       max: Float = 100f,

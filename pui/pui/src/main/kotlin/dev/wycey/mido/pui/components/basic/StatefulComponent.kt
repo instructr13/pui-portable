@@ -5,14 +5,15 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.elements.basic.StatefulElement
 import dev.wycey.mido.pui.state.signals.ComputedSignal
 import dev.wycey.mido.pui.state.signals.Signal
+import dev.wycey.mido.pui.state.signals.Unsubscribe
 import dev.wycey.mido.pui.state.signals.context.RootSignalContext
 import dev.wycey.mido.pui.state.signals.context.nestRootSignalContextScope
 import dev.wycey.mido.pui.state.signals.effect as _effect
 
-abstract class StatefulComponent
+public abstract class StatefulComponent
   @JvmOverloads
   constructor(key: String? = null) : Component(key) {
-    open inner class State {
+    internal open inner class State {
       private val onBuildCallbacks = mutableListOf<() -> Unit>()
 
       var firstBuild = true
@@ -62,7 +63,7 @@ abstract class StatefulComponent
         } else {
           createdEffects.getOrElse(effectIndex++) {
             throw IllegalStateException("Effect index out of bounds")
-          }
+          } as Unsubscribe
         }
 
       fun <T : Any> effect(subscriber: (previous: T?) -> T) =
@@ -71,7 +72,7 @@ abstract class StatefulComponent
         } else {
           createdEffects.getOrElse(effectIndex++) {
             throw IllegalStateException("Effect index out of bounds")
-          }
+          } as Unsubscribe
         }
 
       fun <T : Any> createFunction(fn: () -> T) =
@@ -125,23 +126,23 @@ abstract class StatefulComponent
       }
     }
 
-    var state: State? = null
+    internal var state: State? = null
 
-    fun createState() = State()
+    internal fun createState() = State()
 
-    fun <T> signal(value: T) = state!!.signal(value)
+    public fun <T> signal(value: T): Signal<T> = state!!.signal(value)
 
-    fun <T> computed(compute: () -> T) = state!!.computed(compute)
+    public fun <T> computed(compute: () -> T): ComputedSignal<T> = state!!.computed(compute)
 
-    fun effect(f: () -> Unit) = state!!.effect(f)
+    public fun effect(f: () -> Unit): Unsubscribe = state!!.effect(f)
 
-    fun <T : Any> effect(subscriber: (previous: T?) -> T) = state!!.effect(subscriber)
+    public fun <T : Any> effect(subscriber: (previous: T?) -> T): Unsubscribe = state!!.effect(subscriber)
 
-    fun <T : Any> createFunction(fn: () -> T) = state!!.createFunction(fn)
+    public fun <T : Any> createFunction(fn: () -> T): () -> T = state!!.createFunction(fn)
 
-    fun onRender(callback: () -> Unit) = state!!.onRender(callback)
+    public fun onRender(callback: () -> Unit): Unit = state!!.onRender(callback)
 
-    abstract fun build(context: BuildContext): Component
+    public abstract fun build(context: BuildContext): Component
 
-    override fun createElement() = StatefulElement(this)
+    override fun createElement(): StatefulElement = StatefulElement(this)
   }

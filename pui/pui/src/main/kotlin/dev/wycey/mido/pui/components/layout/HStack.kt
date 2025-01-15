@@ -4,11 +4,13 @@ import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.rendering.MultiChildRendererComponent
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.renderer.layout.StackCrossAxisAlignment
+import dev.wycey.mido.pui.renderer.layout.StackDirection
 import dev.wycey.mido.pui.renderer.layout.StackMainAxisAlignment
+import dev.wycey.mido.pui.renderer.layout.StackRenderer
 
-typealias ChildrenBuilder = () -> List<Component>
+internal typealias ChildrenBuilder = () -> List<Component>
 
-class HStack
+public class HStack
   @JvmOverloads
   constructor(
     children: List<Component>,
@@ -17,16 +19,16 @@ class HStack
     key: String? = null
   ) : MultiChildRendererComponent(children, key) {
     @JvmOverloads
-    constructor(
+    public constructor(
       builder: ChildrenBuilder,
       mainAxisAlignment: StackMainAxisAlignment = StackMainAxisAlignment.Start,
       crossAxisAlignment: StackCrossAxisAlignment = StackCrossAxisAlignment.Start,
       key: String? = null
     ) : this(builder(), mainAxisAlignment, crossAxisAlignment, key)
 
-    override fun createRenderer(context: BuildContext) =
-      dev.wycey.mido.pui.renderer.layout.StackRenderer(
-        dev.wycey.mido.pui.renderer.layout.StackDirection.Horizontal,
+    override fun createRenderer(context: BuildContext): StackRenderer =
+      StackRenderer(
+        StackDirection.Horizontal,
         mainAxisAlignment,
         crossAxisAlignment
       )

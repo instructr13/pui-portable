@@ -8,17 +8,17 @@ import dev.wycey.mido.pui.events.mouse.toEventArgs
 import processing.event.KeyEvent
 import processing.event.MouseEvent
 
-interface ProcessingEventHandler {
+internal interface ProcessingEventHandler {
   fun mouseEvent(data: MouseEvent)
 
   fun keyEvent(data: KeyEvent)
 }
 
-interface EventHandlingBridgeContract {
+internal interface EventHandlingBridgeContract {
   fun registerEvents()
 }
 
-class EventHandlingBridge internal constructor(
+public class EventHandlingBridge internal constructor(
   private val mouseEventBridge: MouseEventBridge,
   private val frameEventBridge: FrameEventBridge
 ) : EventHandlingBridgeContract,
@@ -26,12 +26,12 @@ class EventHandlingBridge internal constructor(
   FrameEventBridgeContract by frameEventBridge,
   ProcessingEventHandler,
   BridgeBase() {
-  companion object {
+  public companion object {
     @JvmField
-    var instanceNullable: EventHandlingBridge? = null
+    internal var instanceNullable: EventHandlingBridge? = null
 
     @JvmStatic
-    val instance get() = checkInstance(instanceNullable)
+    public val instance: EventHandlingBridge get() = checkInstance(instanceNullable)
   }
 
   override fun initInstance() {
@@ -94,11 +94,11 @@ class EventHandlingBridge internal constructor(
     }
   }
 
-  fun addGlobalKeyEvent(event: (e: KeyEventArgs, type: KeyEventType) -> Unit) {
+  public fun addGlobalKeyEvent(event: (e: KeyEventArgs, type: KeyEventType) -> Unit) {
     globalKeyEventsDelegate += event
   }
 
-  fun removeGlobalKeyEvent(event: (e: KeyEventArgs, type: KeyEventType) -> Unit) {
+  public fun removeGlobalKeyEvent(event: (e: KeyEventArgs, type: KeyEventType) -> Unit) {
     globalKeyEventsDelegate -= event
   }
 }

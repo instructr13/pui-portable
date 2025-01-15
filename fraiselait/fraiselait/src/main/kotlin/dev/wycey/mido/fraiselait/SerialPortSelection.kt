@@ -1,7 +1,7 @@
 package dev.wycey.mido.fraiselait
 
-sealed class SerialPortSelection private constructor() {
-  data object Automatic : SerialPortSelection()
+public sealed class SerialPortSelection {
+  public data object Automatic : SerialPortSelection()
 
-  data class Manual(val port: String? = null) : SerialPortSelection()
+  public data class Manual(val port: String? = null) : SerialPortSelection()
 }

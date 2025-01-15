@@ -13,22 +13,22 @@ import dev.wycey.mido.pui.util.processing.RenderMode
 import dev.wycey.mido.pui.util.processing.StrokeCaps
 import dev.wycey.mido.pui.util.processing.StrokeJoins
 
-class Box
+public class Box
   @JvmOverloads
   constructor(
     child: Component? = null,
-    val fill: Int = 0x00FFFFFF,
-    val stroke: Int = 0x00FFFFFF,
-    val strokeWeight: Float? = null,
-    val strokeCap: StrokeCaps? = null,
-    val strokeJoin: StrokeJoins? = null,
-    val borderRadius: BorderRadius = BorderRadius.ZERO,
-    val mode: RenderMode? = null,
+    private val fill: Int = 0x00FFFFFF,
+    private val stroke: Int = 0x00FFFFFF,
+    private val strokeWeight: Float? = null,
+    private val strokeCap: StrokeCaps? = null,
+    private val strokeJoin: StrokeJoins? = null,
+    private val borderRadius: BorderRadius = BorderRadius.ZERO,
+    private val mode: RenderMode? = null,
     key: String? = null,
-    val additionalPaint: ((d: AppletDrawer, currentScope: Scope, size: Size) -> Unit)? = null
+    private val additionalPaint: ((d: AppletDrawer, currentScope: Scope, size: Size) -> Unit)? = null
   ) :
   SingleChildRendererComponent(key, child) {
-    override fun createRenderer(context: BuildContext) =
+    override fun createRenderer(context: BuildContext): ComponentBoxRenderer =
       ComponentBoxRenderer(
         fill = fill,
         stroke = stroke,

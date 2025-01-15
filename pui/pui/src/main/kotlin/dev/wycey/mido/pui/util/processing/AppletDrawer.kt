@@ -6,8 +6,8 @@ import dev.wycey.mido.pui.renderer.BorderRadius
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class AppletDrawer(val applet: PApplet) {
-  inner class AppletWith {
+public class AppletDrawer(public val applet: PApplet) {
+  private inner class AppletWith {
     private val endTasks = mutableListOf<() -> Unit>()
 
     fun <T> with(
@@ -27,7 +27,7 @@ class AppletDrawer(val applet: PApplet) {
     }
   }
 
-  fun with(
+  public fun with(
     fill: Int? = null,
     stroke: Int? = null,
     tint: Int? = null,
@@ -110,18 +110,18 @@ class AppletDrawer(val applet: PApplet) {
     context.end()
   }
 
-  fun rect(
+  public fun rect(
     offset: Point,
     size: Size
   ) {
     applet.rect(offset.x, offset.y, size.width, size.height)
   }
 
-  fun rect(size: Size) {
+  public fun rect(size: Size) {
     applet.rect(0f, 0f, size.width, size.height)
   }
 
-  fun rect(
+  public fun rect(
     size: Size,
     borderRadius: BorderRadius
   ) {
@@ -137,48 +137,49 @@ class AppletDrawer(val applet: PApplet) {
     )
   }
 
-  fun ellipse(
+  public fun ellipse(
     offset: Point,
     size: Size
   ) {
     applet.ellipse(offset.x, offset.y, size.width, size.height)
   }
 
-  fun ellipse(size: Size) {
+  public fun ellipse(size: Size) {
     applet.ellipse(0f, 0f, size.width, size.height)
   }
 
-  fun line(
+  public fun line(
     start: Point,
     end: Point
   ) {
     applet.line(start.x, start.y, end.x, end.y)
   }
 
-  fun text(
+  public fun text(
     content: String,
     offset: Point
   ) {
     applet.text(content, offset.x, offset.y)
   }
 
-  fun text(
+  public fun text(
     content: String,
     textAlign: TextAlign,
     maxWidth: Float
-  ) = text(
-    content,
-    Point(
-      when (textAlign) {
-        TextAlign.Left -> 0f
-        TextAlign.Center -> maxWidth / 2
-        TextAlign.Right -> maxWidth
-      },
-      0f
+  ): Unit =
+    text(
+      content,
+      Point(
+        when (textAlign) {
+          TextAlign.Left -> 0f
+          TextAlign.Center -> maxWidth / 2
+          TextAlign.Right -> maxWidth
+        },
+        0f
+      )
     )
-  )
 
-  fun image(
+  public fun image(
     image: PGraphics,
     offset: Point = Point.ZERO
   ) {

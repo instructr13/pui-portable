@@ -18,7 +18,7 @@ import dev.wycey.mido.pui.runtime.PUIRuntime
 import processing.core.PApplet
 import processing.core.PFont
 
-class MainApplet : PApplet() {
+internal class MainApplet : PApplet() {
   private val runtime: PUIRuntime = PUIRuntime(this)
   private lateinit var font: PFont
 

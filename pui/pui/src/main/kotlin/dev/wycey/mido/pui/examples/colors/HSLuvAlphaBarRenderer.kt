@@ -18,7 +18,6 @@ internal class HSLuvAlphaBarRenderer(
   companion object {
     private fun paintAlpha(
       g: PGraphics,
-      currentScope: Scope,
       h: Float,
       s: Float,
       l: Float,
@@ -105,7 +104,7 @@ internal class HSLuvAlphaBarRenderer(
       alphaBarOverlayGraphics!!.beginDraw()
       alphaBarOverlayGraphics!!.clear()
 
-      paintAlpha(alphaBarOverlayGraphics!!, currentScope, h, s, l, size)
+      paintAlpha(alphaBarOverlayGraphics!!, h, s, l, size)
 
       alphaBarOverlayGraphics!!.endDraw()
     }

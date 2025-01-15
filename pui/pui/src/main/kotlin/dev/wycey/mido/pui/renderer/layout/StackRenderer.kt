@@ -14,12 +14,12 @@ import dev.wycey.mido.pui.renderer.delegations.ContainerRendererImpl
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-enum class StackDirection {
+public enum class StackDirection {
   Horizontal,
   Vertical
 }
 
-enum class StackMainAxisAlignment {
+public enum class StackMainAxisAlignment {
   Start,
   End,
   Center,
@@ -28,19 +28,19 @@ enum class StackMainAxisAlignment {
   SpaceEvenly
 }
 
-enum class StackCrossAxisAlignment {
+public enum class StackCrossAxisAlignment {
   Start,
   End,
   Center,
   Stretch
 }
 
-enum class StackFit {
+public enum class StackFit {
   Expand,
   Loose
 }
 
-data class StackParentRendererData(
+public data class StackParentRendererData(
   var flex: Int? = null,
   var fit: StackFit = StackFit.Expand
 ) :
@@ -48,7 +48,7 @@ data class StackParentRendererData(
 
 private data class LayoutSizes(val main: Float, val cross: Float, val allocated: Float)
 
-class StackRenderer(
+public class StackRenderer(
   _direction: StackDirection,
   _mainAxisAlignment: StackMainAxisAlignment = StackMainAxisAlignment.Start,
   _crossAxisAlignment: StackCrossAxisAlignment = StackCrossAxisAlignment.Start,
@@ -63,7 +63,7 @@ class StackRenderer(
     addAll(children)
   }
 
-  var direction: StackDirection = _direction
+  public var direction: StackDirection = _direction
     set(value) {
       if (field == value) return
 
@@ -72,7 +72,7 @@ class StackRenderer(
       markNeedsLayout()
     }
 
-  var mainAxisAlignment: StackMainAxisAlignment = _mainAxisAlignment
+  public var mainAxisAlignment: StackMainAxisAlignment = _mainAxisAlignment
     set(value) {
       if (field == value) return
 
@@ -81,7 +81,7 @@ class StackRenderer(
       markNeedsLayout()
     }
 
-  var crossAxisAlignment: StackCrossAxisAlignment = _crossAxisAlignment
+  public var crossAxisAlignment: StackCrossAxisAlignment = _crossAxisAlignment
     set(value) {
       if (field == value) return
 
@@ -398,7 +398,7 @@ class StackRenderer(
         child.parentRendererData!! as StackParentRendererData
 
       currentScope.nestPositionalScope(childParentRendererData.offset) {
-        (child as BoxRenderer).paint(d, it)
+        child.paint(d, it)
       }
 
       child = childParentRendererData.nextSibling

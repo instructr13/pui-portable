@@ -7,7 +7,7 @@ import dev.wycey.mido.pui.renderer.box.ProxyBoxRenderer
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-class OffStageRenderer(
+public class OffStageRenderer(
   initialOffstage: Boolean = true,
   child: BoxRenderer? = null
 ) :
@@ -16,7 +16,7 @@ class OffStageRenderer(
     super.child = child
   }
 
-  var offstage: Boolean = initialOffstage
+  public var offstage: Boolean = initialOffstage
     set(value) {
       if (field == value) return
 

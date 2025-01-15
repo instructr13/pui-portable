@@ -1,6 +1,7 @@
 package dev.wycey.mido.leinwand.components
 
 import com.github.ajalt.colormath.model.HSLuv
+import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.StatelessComponent
 import dev.wycey.mido.pui.components.layout.Expanded
 import dev.wycey.mido.pui.components.layout.HStack
@@ -10,7 +11,7 @@ import dev.wycey.mido.pui.components.processing.Box
 import dev.wycey.mido.pui.elements.base.BuildContext
 import processing.core.PApplet
 
-class DrawingInstance
+public class DrawingInstance
   @JvmOverloads
   constructor(
     applet: PApplet,
@@ -24,7 +25,7 @@ class DrawingInstance
       }
     }
 
-    override fun build(context: BuildContext) =
+    override fun build(context: BuildContext): Component =
       Box(
         fill = 0xff43454a.toInt(),
         child =

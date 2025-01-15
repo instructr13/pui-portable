@@ -12,11 +12,11 @@ import dev.wycey.mido.pui.util.processing.TextAlign
 import dev.wycey.mido.pui.util.processing.VerticalTextAlign
 import processing.core.PApplet
 
-class TextRenderer(initialContent: String, initialTextStyle: TextStyle) : BoxRenderer() {
+public class TextRenderer(initialContent: String, initialTextStyle: TextStyle) : BoxRenderer() {
   private var textAscent: Float = 0f
   private var textDescent: Float = 0f
 
-  var content: String = initialContent
+  public var content: String = initialContent
     set(value) {
       if (field == value) return
 
@@ -25,7 +25,7 @@ class TextRenderer(initialContent: String, initialTextStyle: TextStyle) : BoxRen
       markNeedsLayout()
     }
 
-  var textStyle: TextStyle = initialTextStyle
+  public var textStyle: TextStyle = initialTextStyle
     set(value) {
       if (field == value) return
 
@@ -58,7 +58,7 @@ class TextRenderer(initialContent: String, initialTextStyle: TextStyle) : BoxRen
     return constraints.constrain(Size(widthPerLines.maxOrNull() ?: 0f, y))
   }
 
-  override fun computeDryLayout(constraints: BoxConstraints) = computeSize(applet, constraints)
+  override fun computeDryLayout(constraints: BoxConstraints): Size = computeSize(applet, constraints)
 
   override fun performLayout() {
     size = computeSize(applet, constraints as BoxConstraints)

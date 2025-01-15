@@ -2,18 +2,18 @@ package dev.wycey.mido.pui.state.signals.context
 
 import dev.wycey.mido.pui.state.signals.Subscriber
 
-abstract class SignalContext(
-  open val subscriber: Subscriber
+public abstract class SignalContext(
+  internal open val subscriber: Subscriber
 ) {
-  companion object {
+  public companion object {
     @JvmField
-    var rootContext: RootSignalContext? = null
+    public var rootContext: RootSignalContext? = null
 
     @JvmField
-    var warnedAboutRootContext: Boolean = false
+    internal var warnedAboutRootContext: Boolean = false
   }
 
-  open operator fun invoke() {
+  public open operator fun invoke() {
     subscriber()
   }
 }

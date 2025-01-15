@@ -5,7 +5,7 @@ import dev.wycey.mido.pui.state.signals.Unsubscribe
 import dev.wycey.mido.pui.state.signals.context.SignalContext
 import dev.wycey.mido.pui.state.signals.data.ComputedSignalData
 
-open class Computation<T : Any>(private val body: (previous: T?) -> T) {
+internal open class Computation<T : Any>(private val body: (previous: T?) -> T) {
   companion object {
     private val initialComputationStack = ArrayDeque<Computation<*>.InitialComputation>()
 
@@ -23,7 +23,7 @@ open class Computation<T : Any>(private val body: (previous: T?) -> T) {
   private val scheduledSignals = mutableSetOf<Signal<*>>()
   private var lastValue: T
   private val disposeActions = mutableListOf<Unsubscribe>()
-  private val updates = ComputationUpdatesStore()
+  // private val updates = ComputationUpdatesStore()
 
   val pureSignals = mutableSetOf<Signal<*>>()
 
@@ -86,18 +86,19 @@ open class Computation<T : Any>(private val body: (previous: T?) -> T) {
   }
 }
 
-inline fun createComputation(crossinline body: () -> Unit) = Computation<Unit> { body() }
+internal inline fun createComputation(crossinline body: () -> Unit): Computation<Unit> = Computation<Unit> { body() }
 
-inline fun createComputation(
+internal inline fun createComputation(
   noinline body: () -> Unit,
   crossinline onNotify: () -> Unit
-) = object : Computation<Unit>({ body() }) {
-  override fun onNotify(value: Unit) = onNotify()
-}
+): Computation<Unit> =
+  object : Computation<Unit>({ body() }) {
+    override fun onNotify(value: Unit) = onNotify()
+  }
 
-fun <T : Any> createComputation(body: (previous: T?) -> T) = Computation(body)
+internal fun <T : Any> createComputation(body: (previous: T?) -> T) = Computation(body)
 
-inline fun <T : Any> createComputation(
+internal inline fun <T : Any> createComputation(
   noinline body: (previous: T?) -> T,
   crossinline onNotify: (value: T) -> Unit
 ) = object : Computation<T>(body) {

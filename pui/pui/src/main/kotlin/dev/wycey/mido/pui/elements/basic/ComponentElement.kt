@@ -1,12 +1,10 @@
 package dev.wycey.mido.pui.elements.basic
 
 import dev.wycey.mido.pui.components.base.Component
-import dev.wycey.mido.pui.components.rendering.ParentRendererDataComponent
 import dev.wycey.mido.pui.elements.base.Element
-import dev.wycey.mido.pui.renderer.data.ParentRendererData
 
-abstract class ComponentElement(component: Component) : Element(component) {
-  var child: Element? = null
+public abstract class ComponentElement(component: Component) : Element(component) {
+  public var child: Element? = null
     private set
 
   override fun mount(
@@ -37,10 +35,6 @@ abstract class ComponentElement(component: Component) : Element(component) {
 
   override fun visitChildren(visitor: (element: Element) -> Unit) {
     if (child != null) visitor(child!!)
-  }
-
-  fun _updateParentData(parentRendererDataComponent: ParentRendererDataComponent<ParentRendererData>) {
-    parentRendererDataComponent.applyParentRendererData(renderer!!)
   }
 
   protected abstract fun build(): Component

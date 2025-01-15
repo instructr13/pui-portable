@@ -8,13 +8,13 @@ import dev.wycey.mido.pui.state.subscription.SubscriptionType
 import dev.wycey.mido.pui.state.subscription.runWithSubscriptionCallStack
 import dev.wycey.mido.pui.state.subscription.wrapWithSubscriptionCallStack
 
-fun effect(subscriber: () -> Unit): Unsubscribe =
+public fun effect(subscriber: () -> Unit): Unsubscribe =
   createComputation(
     subscriber,
     wrapWithSubscriptionCallStack(SubscriptionType.Effect, subscriber)
   )::dispose
 
-fun <T : Any> effect(subscriber: (previous: T?) -> T): Unsubscribe =
+public fun <T : Any> effect(subscriber: (previous: T?) -> T): Unsubscribe =
   createComputation(
     subscriber
   ) {
@@ -23,9 +23,9 @@ fun <T : Any> effect(subscriber: (previous: T?) -> T): Unsubscribe =
     }
   }::dispose
 
-fun <T> untracked(f: () -> T): T = runWithSubscriptionCallStack(SubscriptionType.Untracked, f)
+public fun <T> untracked(f: () -> T): T = runWithSubscriptionCallStack(SubscriptionType.Untracked, f)
 
-fun onDisposeEffect(f: () -> Unit) {
+public fun onDisposeEffect(f: () -> Unit) {
   if (Signal.lastSubscriptionCall is SubscriptionType.Effect) {
     return
   }

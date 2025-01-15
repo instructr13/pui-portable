@@ -1,5 +1,6 @@
 package dev.wycey.mido.pui.examples
 
+import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.StatelessComponent
 import dev.wycey.mido.pui.components.layout.HStack
 import dev.wycey.mido.pui.components.layout.Padding
@@ -9,7 +10,7 @@ import dev.wycey.mido.pui.components.text.TextStyle
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.EdgeInsets
 
-class SimpleChip
+public class SimpleChip
   @JvmOverloads
   constructor(
     private val title: String,
@@ -20,7 +21,7 @@ class SimpleChip
     private val bodyForegroundColor: Int = 0xff000000.toInt(),
     key: String? = null
   ) : StatelessComponent(key) {
-    override fun build(context: BuildContext) =
+    override fun build(context: BuildContext): Component =
       HStack(
         listOf(
           Box(

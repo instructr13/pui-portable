@@ -11,5 +11,5 @@ internal data class NegotiationData
     val pins: PinInformation
   ) {
     @JsonProperty
-    private val version = PROTOCOL_VERSION
+    val version = PROTOCOL_VERSION
   }

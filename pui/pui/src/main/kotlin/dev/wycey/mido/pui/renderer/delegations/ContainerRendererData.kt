@@ -3,12 +3,12 @@ package dev.wycey.mido.pui.renderer.delegations
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.data.BoxRendererData
 
-interface ContainerRendererDataContract<ChildType : RendererObject> {
-  var previousSibling: ChildType?
-  var nextSibling: ChildType?
+public interface ContainerRendererDataContract<ChildType : RendererObject> {
+  public var previousSibling: ChildType?
+  public var nextSibling: ChildType?
 }
 
-open class ContainerRendererData<ChildType : RendererObject> :
+public open class ContainerRendererData<ChildType : RendererObject> :
   BoxRendererData(),
   ContainerRendererDataContract<ChildType> {
   override var previousSibling: ChildType? = null

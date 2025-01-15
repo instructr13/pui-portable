@@ -4,15 +4,16 @@ import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 import java.util.*
 
-open class RenderGlobalContext(scope: Scope? = null) {
-  var nodesNeedingLayout = PriorityQueue<RendererObject> { a, b -> a.depth - b.depth }
+public open class RenderGlobalContext(scope: Scope? = null) {
+  public var nodesNeedingLayout: PriorityQueue<RendererObject> =
+    PriorityQueue<RendererObject> { a, b -> a.depth - b.depth }
     private set
 
-  var nodesNeedingPaint =
+  public var nodesNeedingPaint: PriorityQueue<RendererObject> =
     PriorityQueue<RendererObject> { a, b -> a.depth - b.depth } // Currently only persistent root renderer
     private set
 
-  open var rootNode: RendererObject? = null
+  public open var rootNode: RendererObject? = null
     set(value) {
       if (field == value) {
         return
@@ -23,7 +24,8 @@ open class RenderGlobalContext(scope: Scope? = null) {
       field?.attach(this)
     }
 
-  var scope: Scope? = null
+  public var scope: Scope? = null
+    private set
 
   private var shouldMergeDirtyNodes = false
   private val children = mutableSetOf<RenderGlobalContext>()
@@ -34,7 +36,7 @@ open class RenderGlobalContext(scope: Scope? = null) {
     }
   }
 
-  fun attach(scope: Scope) {
+  public fun attach(scope: Scope) {
     this.scope = scope
 
     for (child in children) {
@@ -42,7 +44,7 @@ open class RenderGlobalContext(scope: Scope? = null) {
     }
   }
 
-  fun detach() {
+  public fun detach() {
     this.scope = null
 
     for (child in children) {
@@ -50,7 +52,7 @@ open class RenderGlobalContext(scope: Scope? = null) {
     }
   }
 
-  fun adoptChild(child: RenderGlobalContext) {
+  public fun adoptChild(child: RenderGlobalContext) {
     children.add(child)
 
     if (scope != null) {
@@ -58,7 +60,7 @@ open class RenderGlobalContext(scope: Scope? = null) {
     }
   }
 
-  fun dropChild(child: RenderGlobalContext) {
+  public fun dropChild(child: RenderGlobalContext) {
     children.remove(child)
 
     if (scope != null) {
@@ -66,7 +68,7 @@ open class RenderGlobalContext(scope: Scope? = null) {
     }
   }
 
-  fun flushLayout() {
+  public fun flushLayout() {
     try {
       while (nodesNeedingLayout.isNotEmpty()) {
         val dirtyNodes = nodesNeedingLayout.toList()
@@ -99,7 +101,7 @@ open class RenderGlobalContext(scope: Scope? = null) {
     }
   }
 
-  fun flushPaint() {
+  public fun flushPaint() {
     while (nodesNeedingPaint.isNotEmpty()) {
       val node = nodesNeedingPaint.poll()
 

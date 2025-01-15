@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-data class PinInformation
+public data class PinInformation
   @JsonCreator
   constructor(
     val speaker: UByte? = null,
@@ -20,8 +20,8 @@ data class PinInformation
     @JsonProperty("light_sensor")
     val lightSensor: UByte? = null
   ) {
-    companion object {
-      fun fromJVMPinInformation(jvmPinInformation: JVMPinInformation) =
+    public companion object {
+      public fun fromJVMPinInformation(jvmPinInformation: JVMPinInformation): PinInformation =
         PinInformation(
           jvmPinInformation.speaker?.toUByte(),
           jvmPinInformation.tactSwitch?.toUByte(),
@@ -32,10 +32,10 @@ data class PinInformation
         )
     }
 
-    fun toJVMPinInformation() = JVMPinInformation.fromPinInformation(this)
+    public fun toJVMPinInformation(): JVMPinInformation = JVMPinInformation.fromPinInformation(this)
   }
 
-data class NonNullPinInformation(
+public data class NonNullPinInformation(
   val speaker: UByte,
   @JsonProperty("tact_switch")
   val tactSwitch: UByte,
@@ -48,7 +48,7 @@ data class NonNullPinInformation(
   @JsonProperty("light_sensor")
   val lightSensor: UByte
 ) {
-  fun toPinInformation() =
+  public fun toPinInformation(): PinInformation =
     PinInformation(
       speaker,
       tactSwitch,
@@ -58,7 +58,7 @@ data class NonNullPinInformation(
       lightSensor
     )
 
-  fun toJVMNonNullPinInformation() =
+  public fun toJVMNonNullPinInformation(): JVMNonNullPinInformation =
     JVMNonNullPinInformation(
       speaker.toShort(),
       tactSwitch.toShort(),
@@ -68,7 +68,7 @@ data class NonNullPinInformation(
       lightSensor.toShort()
     )
 
-  fun merge(other: PinInformation) =
+  public fun merge(other: PinInformation): NonNullPinInformation =
     NonNullPinInformation(
       other.speaker ?: speaker,
       other.tactSwitch ?: tactSwitch,
@@ -80,29 +80,29 @@ data class NonNullPinInformation(
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-class JVMPinInformation
+public class JVMPinInformation
   @JsonCreator
-  internal constructor(
+  constructor(
     @JvmField
-    val speaker: Short? = null,
+    public val speaker: Short? = null,
     @JsonProperty("tact_switch")
     @JvmField
-    val tactSwitch: Short? = null,
+    public val tactSwitch: Short? = null,
     @JsonProperty("led_green")
     @JvmField
-    val ledGreen: Short? = null,
+    public val ledGreen: Short? = null,
     @JsonProperty("led_blue")
     @JvmField
-    val ledBlue: Short? = null,
+    public val ledBlue: Short? = null,
     @JsonProperty("led_red")
     @JvmField
-    val ledRed: Short? = null,
+    public val ledRed: Short? = null,
     @JsonProperty("light_sensor")
     @JvmField
-    val lightSensor: Short? = null
+    public val lightSensor: Short? = null
   ) {
-    companion object {
-      fun fromPinInformation(pinInformation: PinInformation) =
+    public companion object {
+      internal fun fromPinInformation(pinInformation: PinInformation) =
         JVMPinInformation(
           pinInformation.speaker?.toShort(),
           pinInformation.tactSwitch?.toShort(),
@@ -113,7 +113,7 @@ class JVMPinInformation
         )
     }
 
-    data class Builder
+    public data class Builder
       @JvmOverloads
       constructor(
         var speaker: Short? = null,
@@ -123,7 +123,7 @@ class JVMPinInformation
         var ledRed: Short? = null,
         var lightSensor: Short? = null
       ) {
-        fun build() =
+        public fun build(): JVMPinInformation =
           JVMPinInformation(
             speaker,
             tactSwitch,
@@ -133,23 +133,23 @@ class JVMPinInformation
             lightSensor
           )
 
-        fun speaker(speaker: Short) = apply { this.speaker = speaker }
+        public fun speaker(speaker: Short): Builder = apply { this.speaker = speaker }
 
-        fun tactSwitch(tactSwitch: Short) = apply { this.tactSwitch = tactSwitch }
+        public fun tactSwitch(tactSwitch: Short): Builder = apply { this.tactSwitch = tactSwitch }
 
-        fun ledGreen(ledGreen: Short) = apply { this.ledGreen = ledGreen }
+        public fun ledGreen(ledGreen: Short): Builder = apply { this.ledGreen = ledGreen }
 
-        fun ledBlue(ledBlue: Short) = apply { this.ledBlue = ledBlue }
+        public fun ledBlue(ledBlue: Short): Builder = apply { this.ledBlue = ledBlue }
 
-        fun ledRed(ledRed: Short) = apply { this.ledRed = ledRed }
+        public fun ledRed(ledRed: Short): Builder = apply { this.ledRed = ledRed }
 
-        fun lightSensor(lightSensor: Short) = apply { this.lightSensor = lightSensor }
+        public fun lightSensor(lightSensor: Short): Builder = apply { this.lightSensor = lightSensor }
       }
 
-    fun toPinInformation() = PinInformation.fromJVMPinInformation(this)
+    public fun toPinInformation(): PinInformation = PinInformation.fromJVMPinInformation(this)
   }
 
-data class JVMNonNullPinInformation(
+public data class JVMNonNullPinInformation(
   @JvmField
   val speaker: Short,
   @JsonProperty("tact_switch")
@@ -168,7 +168,7 @@ data class JVMNonNullPinInformation(
   @JvmField
   val lightSensor: Short
 ) {
-  fun toNonNullPinInformation() =
+  public fun toNonNullPinInformation(): NonNullPinInformation =
     NonNullPinInformation(
       speaker.toUByte(),
       tactSwitch.toUByte(),
@@ -178,7 +178,7 @@ data class JVMNonNullPinInformation(
       lightSensor.toUByte()
     )
 
-  fun toJVMPinInformation() =
+  public fun toJVMPinInformation(): JVMPinInformation =
     JVMPinInformation(
       speaker,
       tactSwitch,

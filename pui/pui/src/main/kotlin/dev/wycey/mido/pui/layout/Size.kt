@@ -1,41 +1,41 @@
 package dev.wycey.mido.pui.layout
 
-data class Size(val width: Float, val height: Float) {
-  companion object {
+public data class Size(val width: Float, val height: Float) {
+  public companion object {
     @JvmField
-    val ZERO = Size(0f, 0f)
+    public val ZERO: Size = Size(0f, 0f)
 
     @JvmStatic
-    fun symmetric(size: Float) = Size(size, size)
+    public fun symmetric(size: Float): Size = Size(size, size)
   }
 
-  fun contains(point: Point) = point.x in 0f..width && point.y in 0f..height
+  public fun contains(point: Point): Boolean = point.x in 0f..width && point.y in 0f..height
 
-  fun toPoint() = Point(width, height)
+  public fun toPoint(): Point = Point(width, height)
 
-  fun isFinite() = width.isFinite() && height.isFinite()
+  public fun isFinite(): Boolean = width.isFinite() && height.isFinite()
 
-  operator fun compareTo(other: Size) = (width * height).compareTo(other.width * other.height)
+  public operator fun compareTo(other: Size): Int = (width * height).compareTo(other.width * other.height)
 
-  operator fun plus(other: Size) = Size(width + other.width, height + other.height)
+  public operator fun plus(other: Size): Size = Size(width + other.width, height + other.height)
 
-  operator fun minus(other: Size) = Size(width - other.width, height - other.height)
+  public operator fun minus(other: Size): Size = Size(width - other.width, height - other.height)
 
-  operator fun times(other: Size) = Size(width * other.width, height * other.height)
+  public operator fun times(other: Size): Size = Size(width * other.width, height * other.height)
 
-  operator fun div(other: Size) = Size(width / other.width, height / other.height)
+  public operator fun div(other: Size): Size = Size(width / other.width, height / other.height)
 
-  operator fun rem(other: Size) = Size(width % other.width, height % other.height)
+  public operator fun rem(other: Size): Size = Size(width % other.width, height % other.height)
 
-  operator fun plus(other: Float) = Size(width + other, height + other)
+  public operator fun plus(other: Float): Size = Size(width + other, height + other)
 
-  operator fun minus(other: Float) = Size(width - other, height - other)
+  public operator fun minus(other: Float): Size = Size(width - other, height - other)
 
-  operator fun times(other: Float) = Size(width * other, height * other)
+  public operator fun times(other: Float): Size = Size(width * other, height * other)
 
-  operator fun div(other: Float) = Size(width / other, height / other)
+  public operator fun div(other: Float): Size = Size(width / other, height / other)
 
-  operator fun rem(other: Float) = Size(width % other, height % other)
+  public operator fun rem(other: Float): Size = Size(width % other, height % other)
 
-  operator fun unaryMinus() = Size(-width, -height)
+  public operator fun unaryMinus(): Size = Size(-width, -height)
 }

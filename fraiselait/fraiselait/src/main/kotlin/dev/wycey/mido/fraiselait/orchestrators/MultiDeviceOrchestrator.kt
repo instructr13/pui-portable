@@ -9,19 +9,15 @@ import dev.wycey.mido.fraiselait.models.PinInformation
 import dev.wycey.mido.fraiselait.models.TransferMode
 import processing.core.PApplet
 
-open class MultiDeviceOrchestrator
+public open class MultiDeviceOrchestrator
   @JvmOverloads
   constructor(
     protected val applet: PApplet,
-    val serialRate: Int,
-    val transferMode: TransferMode = TransferMode.MSGPACK
+    public val serialRate: Int,
+    public val transferMode: TransferMode = TransferMode.MSGPACK
   ) {
     private val _devices: MutableSet<SerialDevice> = mutableSetOf()
-    val devices: Set<SerialDevice> = _devices
-
-    val deviceIds get() = devices.map { it.id!! }.toSet()
-
-    val deviceMap get() = devices.associateBy { it.id!! }
+    public val devices: Set<SerialDevice> = _devices
 
     init {
       DevicePortWatcher.listen {
@@ -29,7 +25,7 @@ open class MultiDeviceOrchestrator
       }
     }
 
-    open fun pinInformationFor(deviceId: String): PinInformation = PinInformation()
+    public open fun pinInformationFor(deviceId: String): PinInformation = PinInformation()
 
     protected open fun setupSerialDevice(port: String): SerialDevice {
       val device =
@@ -76,25 +72,17 @@ open class MultiDeviceOrchestrator
       }
     }
 
-    fun sendSingle(
+    public fun sendSingle(
       deviceId: String,
-      command: Command
+      command: Command,
+      buffered: Boolean = true
     ) {
       val device = devices.find { it.port == deviceId } ?: throw IllegalArgumentException("Device not found")
 
-      device.send(command)
+      device.send(command, buffered)
     }
 
-    fun sendSingleDirect(
-      deviceId: String,
-      command: Command
-    ) {
-      val device = devices.find { it.port == deviceId } ?: throw IllegalArgumentException("Device not found")
-
-      device.sendDirect(command)
-    }
-
-    fun sendAll(command: Command) {
+    public fun sendAll(command: Command) {
       devices.forEach { it.send(command) }
     }
   }

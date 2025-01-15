@@ -16,10 +16,10 @@ import dev.wycey.mido.pui.layout.Point
 import dev.wycey.mido.pui.renderer.BorderRadius
 import dev.wycey.mido.pui.util.processing.CursorType
 
-class Checkbox
+public class Checkbox
   @JvmOverloads
   constructor(
-    val valueBuilder: () -> Boolean,
+    private val valueBuilder: () -> Boolean,
     private val label: String? = null,
     private val size: Float = 20f,
     private val borderRadius: BorderRadius = BorderRadius.all(6f),
@@ -28,7 +28,7 @@ class Checkbox
     key: String? = null,
     private val onChange: ((Boolean) -> Unit)? = null
   ) : StatefulComponent(key) {
-    constructor(
+    public constructor(
       value: Boolean,
       label: String? = null,
       size: Float = 20f,

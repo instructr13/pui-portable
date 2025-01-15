@@ -3,7 +3,7 @@ package dev.wycey.mido.pui.state.computation
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
-class ComputationUpdatesStore {
+internal class ComputationUpdatesStore {
   private val lock = ReentrantReadWriteLock()
   private val readLock = lock.readLock()
   private val writeLock = lock.writeLock()

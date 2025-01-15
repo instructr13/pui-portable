@@ -4,26 +4,27 @@ import dev.wycey.mido.pui.events.mouse.MouseWheelType
 import dev.wycey.mido.pui.layout.Point
 import kotlin.time.Duration
 
-sealed class GestureEventType {
-  data class Press(val button: Int) : GestureEventType()
+public sealed class GestureEventType {
+  public data class Press(val button: Int) : GestureEventType()
 
-  data class Release(val button: Int) : GestureEventType()
+  public data class Release(val button: Int) : GestureEventType()
 
-  data class Click(val button: Int, val count: Int) : GestureEventType()
+  public data class Click(val button: Int, val count: Int) : GestureEventType()
 
-  data class Drag(val button: Int, val startingPoint: Point, val persistent: Boolean = false) : GestureEventType()
+  public data class Drag(val button: Int, val startingPoint: Point, val persistent: Boolean = false) :
+    GestureEventType()
 
-  data class Drop(val button: Int, val cancelled: Boolean = false) : GestureEventType()
+  public data class Drop(val button: Int, val cancelled: Boolean = false) : GestureEventType()
 
-  data class Hover(
+  public data class Hover(
     val duration: Duration,
     val persistent: Boolean = false
   ) :
     GestureEventType()
 
-  data object Leave : GestureEventType()
+  public data object Leave : GestureEventType()
 
-  data class Wheel(val type: MouseWheelType, val count: Int) : GestureEventType()
+  public data class Wheel(val type: MouseWheelType, val count: Int) : GestureEventType()
 
   override fun toString(): String =
     when (this) {

@@ -9,20 +9,20 @@ import dev.wycey.mido.pui.util.processing.RenderMode
 import dev.wycey.mido.pui.util.processing.StrokeCaps
 import dev.wycey.mido.pui.util.processing.StrokeJoins
 
-class Ellipse
+public class Ellipse
   @JvmOverloads
   constructor(
     child: Component? = null,
-    val fill: Int = 0x00FFFFFF,
-    val stroke: Int = 0x00FFFFFF,
-    val strokeWeight: Float? = null,
-    val strokeCap: StrokeCaps? = null,
-    val strokeJoin: StrokeJoins? = null,
-    val mode: RenderMode = RenderMode.Corner,
+    private val fill: Int = 0x00FFFFFF,
+    private val stroke: Int = 0x00FFFFFF,
+    private val strokeWeight: Float? = null,
+    private val strokeCap: StrokeCaps? = null,
+    private val strokeJoin: StrokeJoins? = null,
+    private val mode: RenderMode = RenderMode.Corner,
     key: String? = null
   ) :
   SingleChildRendererComponent(key, child) {
-    override fun createRenderer(context: BuildContext) =
+    override fun createRenderer(context: BuildContext): EllipseRenderer =
       EllipseRenderer(
         fill = fill,
         stroke = stroke,

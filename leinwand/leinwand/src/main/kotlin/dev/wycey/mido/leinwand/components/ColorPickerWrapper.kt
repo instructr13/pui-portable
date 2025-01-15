@@ -7,7 +7,7 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.examples.colors.HSLuvColorPicker
 import dev.wycey.mido.pui.state.signals.untracked
 
-class ColorPickerWrapper(
+internal class ColorPickerWrapper(
   private val instanceId: Int,
   private val onChangeColor: (color: HSLuv) -> Unit
 ) : StatefulComponent("colorPickerWrapper$instanceId") {

@@ -8,7 +8,7 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-object MouseGestureArenaHandler {
+internal object MouseGestureArenaHandler {
   private val availablePredicates = mutableSetOf<MouseGesturePredicate>()
   private var arenas = mutableMapOf<GlobalMousePointer, MouseGestureArena>()
 
@@ -70,15 +70,20 @@ object MouseGestureArenaHandler {
     }
 
     return when (type) {
-      InitialGestureType.Press -> handlePress(pointer, e)
+      InitialGestureType.Press -> {
+        handlePress(pointer, e)
+
+        true
+      }
+
       InitialGestureType.MaybeHover -> handleMaybeHover(pointer, e)
     }
   }
 
   private fun handlePress(
-    pointer: GlobalMousePointer,
+    @Suppress("unused") pointer: GlobalMousePointer,
     e: MouseEventArgs
-  ): Boolean {
+  ) {
     assert(tracking != null)
 
     if (!::trackingClick.isInitialized) {
@@ -86,12 +91,10 @@ object MouseGestureArenaHandler {
     }
 
     handleGestureEvent(e, GestureEventType.Press(e.button))
-
-    return true
   }
 
   private fun handleMaybeHover(
-    pointer: GlobalMousePointer,
+    @Suppress("unused") pointer: GlobalMousePointer,
     e: MouseEventArgs
   ): Boolean {
     if (tracking != null) return false
@@ -115,7 +118,7 @@ object MouseGestureArenaHandler {
   }
 
   private fun handleClick(
-    pointer: GlobalMousePointer,
+    @Suppress("unused") pointer: GlobalMousePointer,
     e: MouseEventArgs
   ) {
     assert(tracking != null)
@@ -155,7 +158,7 @@ object MouseGestureArenaHandler {
   }
 
   private fun handleWheel(
-    pointer: GlobalMousePointer,
+    @Suppress("unused") pointer: GlobalMousePointer,
     e: MouseEventArgs,
     type: MouseWheelType
   ) {
@@ -229,7 +232,7 @@ object MouseGestureArenaHandler {
   }
 
   fun handleReleaseWithoutSweep(
-    pointer: GlobalMousePointer,
+    @Suppress("unused") pointer: GlobalMousePointer,
     e: MouseEventArgs
   ) {
     if (tracking == null) return

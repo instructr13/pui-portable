@@ -22,7 +22,7 @@ import kotlinx.coroutines.sync.withLock
 /**
  * The read or write mode of the [ReadWriteMutex].
  */
-enum class MutexMode {
+internal enum class MutexMode {
   READ,
   WRITE
 }
@@ -30,7 +30,7 @@ enum class MutexMode {
 /**
  * The lock state of the [ReadWriteMutex].
  */
-enum class MutexState {
+internal enum class MutexState {
   /**
    * The mutex has been locked.
    */
@@ -42,7 +42,7 @@ enum class MutexState {
   UNLOCKED
 }
 
-data class MutexInfo(val mode: MutexMode, val state: MutexState)
+internal data class MutexInfo(val mode: MutexMode, val state: MutexState)
 
 /**
  * A variation on [Mutex] that supports read and write operations.
@@ -50,7 +50,7 @@ data class MutexInfo(val mode: MutexMode, val state: MutexState)
  * A "real" version may be in the works:
  * https://github.com/Kotlin/kotlinx.coroutines/issues/94
  */
-interface ReadWriteMutex {
+internal interface ReadWriteMutex {
   /**
    * Execute a read operation.  Readers do not block one another, but will be blocked
    * by a writer.
@@ -68,11 +68,11 @@ interface ReadWriteMutex {
  * Construct a new [ReadWriteMutex].  The [block] can be used to provide additional
  * configuration options to the mutex.
  */
-fun ReadWriteMutex(block: ReadWriteMutexBuilder.() -> Unit = {}): ReadWriteMutex {
+internal fun ReadWriteMutex(block: ReadWriteMutexBuilder.() -> Unit = {}): ReadWriteMutex {
   return ReadWriteMutexBuilder().apply(block).build()
 }
 
-class ReadWriteMutexBuilder internal constructor() {
+internal class ReadWriteMutexBuilder internal constructor() {
   private var onStateChange: (suspend (MutexInfo) -> Unit)? = null
 
   /**

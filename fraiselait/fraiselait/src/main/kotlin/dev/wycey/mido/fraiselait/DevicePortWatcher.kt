@@ -5,7 +5,7 @@ import processing.core.PApplet
 import processing.serial.Serial
 import java.util.concurrent.atomic.AtomicBoolean
 
-object DevicePortWatcher {
+internal object DevicePortWatcher {
   private val listeners: MutableList<(Array<String>) -> Unit> = mutableListOf()
 
   var ports: Array<String> = emptyArray()

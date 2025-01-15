@@ -5,7 +5,7 @@ package dev.wycey.mido.pui.state.signals
 import dev.wycey.mido.pui.state.subscription.SubscriptionType
 import dev.wycey.mido.pui.state.subscription.runWithSubscriptionCallStack
 
-fun batch(f: () -> Unit) {
+public fun batch(f: () -> Unit) {
   val depth = Signal.lastSubscriptionCall?.let { it as? SubscriptionType.Batch }?.depth ?: 0
 
   if (depth > 0) {

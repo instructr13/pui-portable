@@ -2,6 +2,6 @@ package dev.wycey.mido.leinwand.components
 
 import processing.core.PApplet
 
-object DrawingRoot {
+internal object DrawingRoot {
   lateinit var applet: PApplet
 }

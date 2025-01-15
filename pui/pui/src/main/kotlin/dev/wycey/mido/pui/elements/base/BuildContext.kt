@@ -6,18 +6,18 @@ import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.util.Scope
 
-interface BuildContext {
-  var component: Component
-  var owner: ComponentOwner?
-  val mounted: Boolean
-  val size: Size?
-  val currentScope: Scope?
+public interface BuildContext {
+  public var component: Component
+  public var owner: ComponentOwner?
+  public val mounted: Boolean
+  public val size: Size?
+  public val currentScope: Scope?
 
-  fun findRenderer(): RendererObject?
+  public fun findRenderer(): RendererObject?
 
-  fun visitAncestorElements(visitor: (element: Element) -> Boolean)
+  public fun visitAncestorElements(visitor: (element: Element) -> Boolean)
 
-  fun visitChildElements(visitor: (element: Element) -> Unit)
+  public fun visitChildElements(visitor: (element: Element) -> Unit)
 
-  fun markAsDirty()
+  public fun markAsDirty()
 }

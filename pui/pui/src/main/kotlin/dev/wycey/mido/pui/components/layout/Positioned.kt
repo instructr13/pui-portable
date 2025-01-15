@@ -5,29 +5,29 @@ import dev.wycey.mido.pui.components.rendering.ParentRendererDataComponent
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.data.ZStackRendererData
 
-class Positioned
+public class Positioned
   @JvmOverloads
   constructor(
     child: Component,
-    val left: Float? = null,
-    val top: Float? = null,
-    val right: Float? = null,
-    val bottom: Float? = null,
-    val width: Float? = null,
-    val height: Float? = null,
+    private val left: Float? = null,
+    private val top: Float? = null,
+    private val right: Float? = null,
+    private val bottom: Float? = null,
+    private val width: Float? = null,
+    private val height: Float? = null,
     key: String? = null
   ) : ParentRendererDataComponent<ZStackRendererData>(child, key) {
-    companion object {
+    public companion object {
       @JvmStatic
       @JvmOverloads
-      fun full(
+      public fun full(
         child: Component,
         left: Float = 0f,
         top: Float = 0f,
         right: Float = 0f,
         bottom: Float = 0f,
         key: String? = null
-      ) = Positioned(child, left, top, right, bottom, key = key)
+      ): Positioned = Positioned(child, left, top, right, bottom, key = key)
     }
 
     init {

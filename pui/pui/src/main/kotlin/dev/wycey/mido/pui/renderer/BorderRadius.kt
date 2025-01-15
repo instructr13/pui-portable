@@ -2,45 +2,46 @@ package dev.wycey.mido.pui.renderer
 
 import dev.wycey.mido.pui.layout.constraints.lerp
 
-data class BorderRadius(
+public data class BorderRadius(
   val topLeft: Float = 0f,
   val topRight: Float = 0f,
   val bottomRight: Float = 0f,
   val bottomLeft: Float = 0f
 ) {
-  companion object {
+  public companion object {
     @JvmField
-    val ZERO = BorderRadius()
+    public val ZERO: BorderRadius = BorderRadius()
 
     @JvmStatic
-    fun all(radius: Float) = BorderRadius(radius, radius, radius, radius)
+    public fun all(radius: Float): BorderRadius = BorderRadius(radius, radius, radius, radius)
 
     @JvmStatic
-    fun vertical(
+    public fun vertical(
       top: Float,
       bottom: Float
-    ) = BorderRadius(top, top, bottom, bottom)
+    ): BorderRadius = BorderRadius(top, top, bottom, bottom)
 
     @JvmStatic
-    fun horizontal(
+    public fun horizontal(
       left: Float,
       right: Float
-    ) = BorderRadius(left, right, right, left)
+    ): BorderRadius = BorderRadius(left, right, right, left)
 
     @JvmStatic
-    fun lerp(
+    public fun lerp(
       a: BorderRadius,
       b: BorderRadius,
       t: Float
-    ) = BorderRadius(
-      a.topLeft.lerp(b.topLeft, t),
-      a.topRight.lerp(b.topRight, t),
-      a.bottomRight.lerp(b.bottomRight, t),
-      a.bottomLeft.lerp(b.bottomLeft, t)
-    )
+    ): BorderRadius =
+      BorderRadius(
+        a.topLeft.lerp(b.topLeft, t),
+        a.topRight.lerp(b.topRight, t),
+        a.bottomRight.lerp(b.bottomRight, t),
+        a.bottomLeft.lerp(b.bottomLeft, t)
+      )
   }
 
-  operator fun plus(other: BorderRadius) =
+  public operator fun plus(other: BorderRadius): BorderRadius =
     BorderRadius(
       topLeft + other.topLeft,
       topRight + other.topRight,
@@ -48,7 +49,7 @@ data class BorderRadius(
       bottomLeft + other.bottomLeft
     )
 
-  operator fun minus(other: BorderRadius) =
+  public operator fun minus(other: BorderRadius): BorderRadius =
     BorderRadius(
       topLeft - other.topLeft,
       topRight - other.topRight,
@@ -56,7 +57,7 @@ data class BorderRadius(
       bottomLeft - other.bottomLeft
     )
 
-  operator fun unaryMinus() =
+  public operator fun unaryMinus(): BorderRadius =
     BorderRadius(
       -topLeft,
       -topRight,
@@ -64,7 +65,7 @@ data class BorderRadius(
       -bottomLeft
     )
 
-  operator fun times(other: Float) =
+  public operator fun times(other: Float): BorderRadius =
     BorderRadius(
       topLeft * other,
       topRight * other,
@@ -72,7 +73,7 @@ data class BorderRadius(
       bottomLeft * other
     )
 
-  operator fun div(other: Float) =
+  public operator fun div(other: Float): BorderRadius =
     BorderRadius(
       topLeft / other,
       topRight / other,
@@ -80,7 +81,7 @@ data class BorderRadius(
       bottomLeft / other
     )
 
-  operator fun rem(other: Float) =
+  public operator fun rem(other: Float): BorderRadius =
     BorderRadius(
       topLeft % other,
       topRight % other,

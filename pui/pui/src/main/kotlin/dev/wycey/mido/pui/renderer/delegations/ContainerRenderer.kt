@@ -4,35 +4,38 @@ import dev.wycey.mido.pui.renderer.RenderGlobalContext
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.RendererVisitor
 
-interface ContainerRendererContract<ChildType : RendererObject> {
-  val childCount: Int
-  val firstChild: ChildType?
-  val lastChild: ChildType?
+public interface ContainerRendererContract<ChildType : RendererObject> {
+  public val childCount: Int
+  public val firstChild: ChildType?
+  public val lastChild: ChildType?
 
-  fun childBefore(child: ChildType): ChildType?
+  public fun childBefore(child: ChildType): ChildType?
 
-  fun childAfter(child: ChildType): ChildType?
+  public fun childAfter(child: ChildType): ChildType?
 
-  fun insert(
+  public fun insert(
     child: ChildType,
     after: ChildType? = null
   )
 
-  fun add(child: ChildType)
+  public fun add(child: ChildType)
 
-  fun addAll(children: List<ChildType>)
+  public fun addAll(children: List<ChildType>)
 
-  fun remove(child: ChildType)
+  public fun remove(child: ChildType)
 
-  fun removeAll()
+  public fun removeAll()
 
-  fun move(
+  public fun move(
     child: ChildType,
     after: ChildType? = null
   )
 }
 
-class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : ContainerRendererDataContract<ChildType>> :
+public class ContainerRendererImpl<
+  ChildType : RendererObject,
+  ParentDataType : ContainerRendererDataContract<ChildType>
+  > :
   ContainerRendererContract<ChildType> {
   override val childCount: Int
     get() = _childCount
@@ -48,6 +51,23 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
   private var _childCount = 0
   private var _firstChild: ChildType? = null
   private var _lastChild: ChildType? = null
+
+  public val children: List<ChildType>
+    get() {
+      val children = mutableListOf<ChildType>()
+
+      var child = _firstChild
+
+      while (child != null) {
+        children.add(child)
+
+        val childParentRendererData = child.parentRendererData!! as ParentDataType
+
+        child = childParentRendererData.nextSibling
+      }
+
+      return children
+    }
 
   override fun childBefore(child: ChildType): ChildType? {
     val childParentRendererData = child.parentRendererData!! as ParentDataType
@@ -139,7 +159,7 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
     insert(child, after = _lastChild)
   }
 
-  override fun addAll(children: List<ChildType>) = children.forEach(::add)
+  override fun addAll(children: List<ChildType>): Unit = children.forEach(::add)
 
   private fun removeFromChildList(child: ChildType) {
     val childParentRendererData = child.parentRendererData!! as ParentDataType
@@ -211,7 +231,7 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
     that.markNeedsLayout()
   }
 
-  fun attach(context: RenderGlobalContext) {
+  public fun attach(context: RenderGlobalContext) {
     var child = _firstChild
 
     while (child != null) {
@@ -223,7 +243,7 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
     }
   }
 
-  fun detach() {
+  public fun detach() {
     var child = _firstChild
 
     while (child != null) {
@@ -235,7 +255,7 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
     }
   }
 
-  fun redepthChildren() {
+  public fun redepthChildren() {
     var child = _firstChild
 
     while (child != null) {
@@ -247,7 +267,7 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
     }
   }
 
-  fun visitChildren(visitor: RendererVisitor) {
+  public fun visitChildren(visitor: RendererVisitor) {
     var child = _firstChild
 
     while (child != null) {
@@ -257,21 +277,5 @@ class ContainerRendererImpl<ChildType : RendererObject, ParentDataType : Contain
 
       child = childParentRendererData.nextSibling
     }
-  }
-
-  fun getChildrenAsList(): List<ChildType> {
-    val children = mutableListOf<ChildType>()
-
-    var child = _firstChild
-
-    while (child != null) {
-      children.add(child)
-
-      val childParentRendererData = child.parentRendererData!! as ParentDataType
-
-      child = childParentRendererData.nextSibling
-    }
-
-    return children
   }
 }

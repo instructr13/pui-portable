@@ -6,7 +6,8 @@ import dev.wycey.mido.pui.elements.base.Element
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.delegations.RendererWithChildContract
 
-class SingleChildRendererElement(component: SingleChildRendererComponent) : RendererElement<RendererObject>(component) {
+public class SingleChildRendererElement(component: SingleChildRendererComponent) :
+  RendererElement<RendererObject>(component) {
   private var child: Element? = null
 
   override fun visitChildren(visitor: (element: Element) -> Unit) {

@@ -4,9 +4,12 @@ import dev.wycey.mido.pui.layout.Alignment
 import dev.wycey.mido.pui.layout.AlignmentFactor
 import dev.wycey.mido.pui.renderer.data.BoxRendererData
 
-open class AlignedBoxRenderer(initialAlignment: AlignmentFactor? = Alignment.center, child: BoxRenderer? = null) :
+public open class AlignedBoxRenderer(
+  initialAlignment: AlignmentFactor? = Alignment.center,
+  child: BoxRenderer? = null
+) :
   ShiftedBoxRenderer(child) {
-  var alignment: AlignmentFactor? = initialAlignment
+  public var alignment: AlignmentFactor? = initialAlignment
     set(value) {
       if (field == value) return
 

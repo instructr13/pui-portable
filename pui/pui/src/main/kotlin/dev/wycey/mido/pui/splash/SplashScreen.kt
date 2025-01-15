@@ -4,8 +4,8 @@ import dev.wycey.mido.pui.layout.Point
 import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-class SplashScreen(private val windowSize: Size) {
-  fun draw(d: AppletDrawer) {
+public class SplashScreen(private val windowSize: Size) {
+  public fun draw(d: AppletDrawer) {
     d.applet.background(255)
 
     val center = windowSize.toPoint() / Point(2f, 2f)

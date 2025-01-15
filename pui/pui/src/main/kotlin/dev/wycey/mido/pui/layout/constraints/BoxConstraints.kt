@@ -8,29 +8,30 @@ internal fun Float.lerp(
   t: Float
 ) = this * (1 - t) + other * t
 
-data class BoxConstraints(
+public data class BoxConstraints(
   var minWidth: Float = 0f,
   var maxWidth: Float = Float.POSITIVE_INFINITY,
   var minHeight: Float = 0f,
   var maxHeight: Float = Float.POSITIVE_INFINITY
 ) : Constraints() {
-  companion object {
+  public companion object {
     @JvmStatic
-    fun tight(size: Size) = BoxConstraints(size.width, size.width, size.height, size.height)
+    public fun tight(size: Size): BoxConstraints = BoxConstraints(size.width, size.width, size.height, size.height)
 
     @JvmStatic
-    fun tightFor(
+    public fun tightFor(
       width: Float? = null,
       height: Float? = null
-    ) = BoxConstraints(
-      width ?: 0f,
-      width ?: Float.POSITIVE_INFINITY,
-      height ?: 0f,
-      height ?: Float.POSITIVE_INFINITY
-    )
+    ): BoxConstraints =
+      BoxConstraints(
+        width ?: 0f,
+        width ?: Float.POSITIVE_INFINITY,
+        height ?: 0f,
+        height ?: Float.POSITIVE_INFINITY
+      )
 
     @JvmStatic
-    fun lerp(
+    public fun lerp(
       a: BoxConstraints?,
       b: BoxConstraints?,
       t: Float
@@ -56,23 +57,24 @@ data class BoxConstraints(
     }
   }
 
-  val hasTightWidth get() = minWidth >= maxWidth
-  val hasTightHeight get() = minHeight >= maxHeight
-  val hasBoundedWidth get() = maxWidth < Float.POSITIVE_INFINITY
-  val hasBoundedHeight get() = maxHeight < Float.POSITIVE_INFINITY
-  val smallest get() = Size(constrainWidth(0f), constrainHeight(0f))
-  val biggest get() = Size(constrainWidth(Float.POSITIVE_INFINITY), constrainHeight(Float.POSITIVE_INFINITY))
-  val tightest get() = Size(constrainWidth(), constrainHeight())
-  val loosest get() = Size(constrainWidth(Float.POSITIVE_INFINITY), constrainHeight(Float.POSITIVE_INFINITY))
-  val isNormalized get() = minWidth <= maxWidth && minHeight <= maxHeight
-  val maxSize get() = Size(maxWidth, maxHeight)
+  val hasTightWidth: Boolean get() = minWidth >= maxWidth
+  val hasTightHeight: Boolean get() = minHeight >= maxHeight
+  val hasBoundedWidth: Boolean get() = maxWidth < Float.POSITIVE_INFINITY
+  val hasBoundedHeight: Boolean get() = maxHeight < Float.POSITIVE_INFINITY
+  val smallest: Size get() = Size(constrainWidth(0f), constrainHeight(0f))
+  val biggest: Size get() = Size(constrainWidth(Float.POSITIVE_INFINITY), constrainHeight(Float.POSITIVE_INFINITY))
+  val tightest: Size get() = Size(constrainWidth(), constrainHeight())
+  val loosest: Size get() = Size(constrainWidth(Float.POSITIVE_INFINITY), constrainHeight(Float.POSITIVE_INFINITY))
+  val isNormalized: Boolean get() = minWidth <= maxWidth && minHeight <= maxHeight
+  val maxSize: Size get() = Size(maxWidth, maxHeight)
 
   override val isTight: Boolean
     get() = hasTightWidth && hasTightHeight
 
-  fun isFinite() = minWidth.isFinite() && maxWidth.isFinite() && minHeight.isFinite() && maxHeight.isFinite()
+  public fun isFinite(): Boolean =
+    minWidth.isFinite() && maxWidth.isFinite() && minHeight.isFinite() && maxHeight.isFinite()
 
-  fun enforce(constraints: BoxConstraints) =
+  public fun enforce(constraints: BoxConstraints): BoxConstraints =
     BoxConstraints(
       minWidth.coerceIn(constraints.minWidth..constraints.maxWidth),
       maxWidth.coerceIn(constraints.minWidth..constraints.maxWidth),
@@ -80,18 +82,18 @@ data class BoxConstraints(
       maxHeight.coerceIn(constraints.minHeight..constraints.maxHeight)
     )
 
-  fun constrainWidth(width: Float = Float.POSITIVE_INFINITY) = width.coerceIn(minWidth..maxWidth)
+  public fun constrainWidth(width: Float = Float.POSITIVE_INFINITY): Float = width.coerceIn(minWidth..maxWidth)
 
-  fun constrainHeight(height: Float = Float.POSITIVE_INFINITY) = height.coerceIn(minHeight..maxHeight)
+  public fun constrainHeight(height: Float = Float.POSITIVE_INFINITY): Float = height.coerceIn(minHeight..maxHeight)
 
-  fun constrain(size: Size) = Size(constrainWidth(size.width), constrainHeight(size.height))
+  public fun constrain(size: Size): Size = Size(constrainWidth(size.width), constrainHeight(size.height))
 
-  fun constrainDimensions(
+  public fun constrainDimensions(
     width: Float,
     height: Float
-  ) = Size(constrainWidth(width), constrainHeight(height))
+  ): Size = Size(constrainWidth(width), constrainHeight(height))
 
-  fun deflate(edges: EdgeInsets): BoxConstraints {
+  public fun deflate(edges: EdgeInsets): BoxConstraints {
     val horizontal = edges.left + edges.right
     val vertical = edges.top + edges.bottom
     val deflatedMinWidth = maxOf(0f, minWidth - horizontal)
@@ -105,23 +107,24 @@ data class BoxConstraints(
     )
   }
 
-  fun tighten(
+  public fun tighten(
     width: Float? = null,
     height: Float? = null
-  ) = BoxConstraints(
-    width?.coerceIn(minWidth..maxWidth) ?: minWidth,
-    width?.coerceIn(minWidth..maxWidth) ?: maxWidth,
-    height?.coerceIn(minHeight..maxHeight) ?: minHeight,
-    height?.coerceIn(minHeight..maxHeight) ?: maxHeight
-  )
+  ): BoxConstraints =
+    BoxConstraints(
+      width?.coerceIn(minWidth..maxWidth) ?: minWidth,
+      width?.coerceIn(minWidth..maxWidth) ?: maxWidth,
+      height?.coerceIn(minHeight..maxHeight) ?: minHeight,
+      height?.coerceIn(minHeight..maxHeight) ?: maxHeight
+    )
 
-  fun loosen() =
+  public fun loosen(): BoxConstraints =
     BoxConstraints(
       maxWidth = maxWidth,
       maxHeight = maxHeight
     )
 
-  operator fun times(factor: Float) =
+  public operator fun times(factor: Float): BoxConstraints =
     BoxConstraints(
       minWidth * factor,
       maxWidth * factor,
@@ -129,7 +132,7 @@ data class BoxConstraints(
       maxHeight * factor
     )
 
-  operator fun div(factor: Float) =
+  public operator fun div(factor: Float): BoxConstraints =
     BoxConstraints(
       minWidth / factor,
       maxWidth / factor,
@@ -137,7 +140,7 @@ data class BoxConstraints(
       maxHeight / factor
     )
 
-  operator fun rem(factor: Float) =
+  public operator fun rem(factor: Float): BoxConstraints =
     BoxConstraints(
       minWidth % factor,
       maxWidth % factor,

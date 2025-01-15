@@ -6,10 +6,9 @@ import dev.wycey.mido.pui.layout.constraints.BoxConstraints
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.data.BoxRendererData
 
-open class BoxRenderer : RendererObject() {
+public open class BoxRenderer : RendererObject() {
   private var _size: Size? = null
-
-  var size: Size
+  public var size: Size
     get() = _size ?: throw IllegalStateException("Size is not set")
     set(value) {
       _size = value
@@ -49,25 +48,25 @@ open class BoxRenderer : RendererObject() {
     return Size.ZERO
   }
 
-  private fun _computeDryLayout(constraints: BoxConstraints): Size = computeDryLayout(constraints)
+  private fun computeDryLayoutUnchecked(constraints: BoxConstraints): Size = computeDryLayout(constraints)
 
-  open fun getDryLayout(constraints: BoxConstraints): Size {
+  public open fun getDryLayout(constraints: BoxConstraints): Size {
     if (cachedDryLayoutSizes == null) {
       cachedDryLayoutSizes = mutableMapOf()
     }
 
-    val result = cachedDryLayoutSizes!!.computeIfAbsent(constraints) { _computeDryLayout(it) }
+    val result = cachedDryLayoutSizes!!.computeIfAbsent(constraints) { computeDryLayoutUnchecked(it) }
 
     return result
   }
 
   override fun performResize() {
-    _size = _computeDryLayout(getConstraints())
+    _size = computeDryLayoutUnchecked(getConstraints())
   }
 
-  fun hasSize() = _size != null
+  public fun hasSize(): Boolean = _size != null
 
-  open fun getParentAbsolutePosition(): Point {
+  public open fun getParentAbsolutePosition(): Point {
     var parent = parent
 
     while (parent != null) {
@@ -85,7 +84,7 @@ open class BoxRenderer : RendererObject() {
     return Point.ZERO
   }
 
-  open fun safeGetAbsolutePosition(): Point? {
+  public open fun safeGetAbsolutePosition(): Point? {
     return try {
       getAbsolutePosition()
     } catch (e: IllegalStateException) {
@@ -93,7 +92,7 @@ open class BoxRenderer : RendererObject() {
     }
   }
 
-  open fun getAbsolutePosition(): Point {
+  public open fun getAbsolutePosition(): Point {
     val parentRendererData =
       parentRendererData as? BoxRendererData
         ?: throw IllegalStateException(

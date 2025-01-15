@@ -7,7 +7,7 @@ import dev.wycey.mido.pui.components.root.ViewComponent
 import dev.wycey.mido.pui.elements.base.Element
 import dev.wycey.mido.pui.elements.root.RootElement
 
-interface ComponentsBridgeContract {
+internal interface ComponentsBridgeContract {
   fun drawFrame()
 
   fun attachRootComponent(component: Component)
@@ -17,7 +17,7 @@ interface ComponentsBridgeContract {
   fun wrapWithProcessingView(rootComponent: Component): Component
 }
 
-class ComponentsBridge internal constructor(
+public class ComponentsBridge internal constructor(
   private val mouseEventBridge: MouseEventBridge,
   private val frameEventBridge: FrameEventBridge,
   private val rendererBridge: RendererBridge
@@ -26,12 +26,12 @@ class ComponentsBridge internal constructor(
   FrameEventBridgeContract by frameEventBridge,
   RendererBridgeContract by rendererBridge,
   BridgeBase() {
-  companion object {
+  public companion object {
     @JvmField
-    var instanceNullable: ComponentsBridge? = null
+    internal var instanceNullable: ComponentsBridge? = null
 
     @JvmStatic
-    val instance get() = checkInstance(instanceNullable)
+    public val instance: ComponentsBridge get() = checkInstance(instanceNullable)
   }
 
   private var rootElement: Element? = null

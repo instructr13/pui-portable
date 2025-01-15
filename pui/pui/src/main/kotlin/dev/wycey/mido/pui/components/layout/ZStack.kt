@@ -9,7 +9,7 @@ import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.layout.ZStackFit
 import dev.wycey.mido.pui.renderer.layout.ZStackRenderer
 
-class ZStack
+public class ZStack
   @JvmOverloads
   constructor(
     children: List<Component> = emptyList(),
@@ -18,14 +18,14 @@ class ZStack
     key: String? = null
   ) : MultiChildRendererComponent(children, key) {
     @JvmOverloads
-    constructor(
+    public constructor(
       childrenBuilder: () -> List<Component>,
       alignment: AlignmentFactor = AlignmentDirectional.topStart,
       fit: ZStackFit = ZStackFit.Loose,
       key: String? = null
     ) : this(childrenBuilder(), alignment, fit, key)
 
-    override fun createRenderer(context: BuildContext) =
+    override fun createRenderer(context: BuildContext): ZStackRenderer =
       ZStackRenderer(
         alignment,
         fit

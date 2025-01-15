@@ -11,10 +11,10 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.renderer.BorderRadius
 
-class ProgressBar
+public class ProgressBar
   @JvmOverloads
   constructor(
-    var value: Float = 0f,
+    private var value: Float = 0f,
     private val min: Float = 0f,
     private val max: Float = 100f,
     private val barSize: Float = 200f,

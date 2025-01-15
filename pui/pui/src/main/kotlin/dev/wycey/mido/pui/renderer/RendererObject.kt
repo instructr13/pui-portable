@@ -5,36 +5,38 @@ import dev.wycey.mido.pui.renderer.data.ParentRendererData
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-typealias RendererVisitor = (child: RendererObject) -> Unit
+internal typealias RendererVisitor = (child: RendererObject) -> Unit
 
-abstract class RendererObject {
-  var parent: RendererObject? = null
+public abstract class RendererObject {
+  public var parent: RendererObject? = null
     private set
 
-  var context: RenderGlobalContext? = null
+  public var context: RenderGlobalContext? = null
     private set
 
-  var parentRendererData: ParentRendererData? = null
+  public var parentRendererData: ParentRendererData? = null
 
-  var depth = 0
+  public var depth: Int = 0
     private set
 
-  open var constraints: Constraints? = null
+  public open var constraints: Constraints? = null
 
-  open val attached get() = context != null
+  public open val attached: Boolean
+    get() = context != null
 
-  protected open val sizedByParent = false
+  protected open val sizedByParent: Boolean = false
 
-  var needsLayout = true
+  public var needsLayout: Boolean = true
+
   private var relayoutBoundary: RendererObject? = null
 
-  open fun setupParentRendererData(child: RendererObject) {
+  public open fun setupParentRendererData(child: RendererObject) {
     if (child.parentRendererData !is ParentRendererData) {
       child.parentRendererData = ParentRendererData()
     }
   }
 
-  open fun redepthChild(child: RendererObject) {
+  public open fun redepthChild(child: RendererObject) {
     if (child.depth <= depth) {
       child.depth = depth + 1
       child.redepthChildren()
@@ -43,7 +45,7 @@ abstract class RendererObject {
 
   protected open fun redepthChildren() {}
 
-  open fun insertChild(child: RendererObject) {
+  public open fun insertChild(child: RendererObject) {
     setupParentRendererData(child)
     markNeedsLayout()
 
@@ -57,9 +59,9 @@ abstract class RendererObject {
     child.performInsertChild()
   }
 
-  open fun performInsertChild() {}
+  public open fun performInsertChild() {}
 
-  open fun dropChild(child: RendererObject) {
+  public open fun dropChild(child: RendererObject) {
     child.performDrop()
     child.cleanRelayoutBoundary()
     child.parentRendererData!!.detach()
@@ -73,15 +75,15 @@ abstract class RendererObject {
     markNeedsLayout()
   }
 
-  open fun performDrop() {}
+  public open fun performDrop() {}
 
-  fun markParentNeedsLayout() {
+  public fun markParentNeedsLayout() {
     needsLayout = true
 
     parent!!.markNeedsLayout()
   }
 
-  open fun markNeedsLayout() {
+  public open fun markNeedsLayout() {
     if (relayoutBoundary == null) {
       needsLayout = true
 
@@ -103,18 +105,16 @@ abstract class RendererObject {
     context?.nodesNeedingLayout?.add(this)
   }
 
-  open fun markNeedsLayoutForSizedByParentChange() {
+  public open fun markNeedsLayoutForSizedByParentChange() {
     markNeedsLayout()
     markParentNeedsLayout()
   }
 
-  protected open fun performResize() {
-  }
+  protected open fun performResize() {}
 
-  protected open fun performLayout() {
-  }
+  protected open fun performLayout() {}
 
-  open fun layout(
+  public open fun layout(
     constraints: Constraints,
     parentUsesMySize: Boolean = false
   ) {
@@ -155,20 +155,20 @@ abstract class RendererObject {
     needsLayout = false
   }
 
-  open fun layoutWithoutResize() {
+  public open fun layoutWithoutResize() {
     performLayout()
 
     needsLayout = false
   }
 
-  fun scheduleInitialLayout() {
+  public fun scheduleInitialLayout() {
     relayoutBoundary = this
 
     context!!.nodesNeedingLayout.add(this)
     context!!.nodesNeedingPaint.add(this)
   }
 
-  open fun attach(context: RenderGlobalContext) {
+  public open fun attach(context: RenderGlobalContext) {
     this.context = context
 
     if (needsLayout && relayoutBoundary != null) {
@@ -178,20 +178,22 @@ abstract class RendererObject {
     }
   }
 
-  open fun detach() {
+  public open fun detach() {
     context = null
   }
 
-  open fun visitChildren(visitor: RendererVisitor) {}
+  public open fun visitChildren(visitor: RendererVisitor) {}
 
-  open fun paint(
+  public open fun paint(
     d: AppletDrawer,
     currentScope: Scope
-  ) {}
+  ) {
+  }
 
-  var firstLayout = false
+  public var firstLayout: Boolean = false
+    private set
 
-  fun tryPaint(
+  public fun tryPaint(
     d: AppletDrawer,
     currentScope: Scope
   ) {

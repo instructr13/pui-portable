@@ -17,7 +17,6 @@ internal class HSLuvHueBarRenderer(
   companion object {
     private fun paintHue(
       g: PGraphics,
-      currentScope: Scope,
       s: Float,
       l: Float,
       size: Size
@@ -80,7 +79,7 @@ internal class HSLuvHueBarRenderer(
       hueBarGraphics!!.noSmooth()
       hueBarGraphics!!.beginDraw()
 
-      paintHue(hueBarGraphics!!, currentScope, s, l, size)
+      paintHue(hueBarGraphics!!, s, l, size)
 
       hueBarGraphics!!.endDraw()
     }

@@ -1,6 +1,7 @@
 package dev.wycey.mido.leinwand.components
 
 import dev.wycey.mido.leinwand.Styles
+import dev.wycey.mido.leinwand.util.round
 import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.StatefulComponent
 import dev.wycey.mido.pui.components.gestures.GestureListener
@@ -8,9 +9,8 @@ import dev.wycey.mido.pui.components.layout.*
 import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.events.mouse.MouseButtons
-import dev.wycey.mido.pui.util.round
 
-class ColorSelector(private val instanceId: Int) : StatefulComponent("colorSelector$instanceId") {
+internal class ColorSelector(private val instanceId: Int) : StatefulComponent("colorSelector$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 

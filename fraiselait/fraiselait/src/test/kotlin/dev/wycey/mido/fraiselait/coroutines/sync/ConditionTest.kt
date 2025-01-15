@@ -18,7 +18,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 class ConditionTest {
   val lock = Mutex()
-  val cond = lock.newCondition()
+  internal val cond = lock.newCondition()
 
   @Test
   fun testAwaitWithoutSignal() {

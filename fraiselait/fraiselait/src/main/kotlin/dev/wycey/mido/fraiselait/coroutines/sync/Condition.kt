@@ -1,5 +1,6 @@
 /**
  * Source: https://gist.github.com/paulo-raca/ef6a827046a5faec95024ff406d3a692
+ * Modified by Mido
  */
 
 package dev.wycey.mido.fraiselait.coroutines.sync
@@ -14,8 +15,8 @@ import kotlin.time.ExperimentalTime
 /**
  * This should be part of kotlin-coroutines: https://github.com/Kotlin/kotlinx.coroutines/issues/2531
  */
-class Condition(val mutex: Mutex) {
-  val waiting = LinkedHashSet<Mutex>()
+internal class Condition(private val mutex: Mutex) {
+  internal val waiting = LinkedHashSet<Mutex>()
 
   /**
    * Blocks this coroutine until the predicate is true or the specified timeout has elapsed
@@ -63,7 +64,7 @@ class Condition(val mutex: Mutex) {
         waiter.lock()
       }
       return true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       return false
     } finally {
       mutex.lock(owner)
@@ -74,7 +75,7 @@ class Condition(val mutex: Mutex) {
   /**
    * Wakes up one coroutine blocked in await()
    */
-  suspend fun signal(owner: Any? = null) {
+  fun signal(owner: Any? = null) {
     ensureLocked(owner, "notify")
     val it = waiting.iterator()
     if (it.hasNext()) {
@@ -87,7 +88,7 @@ class Condition(val mutex: Mutex) {
   /**
    * Wakes up all coroutines blocked in await()
    */
-  suspend fun signalAll(owner: Any? = null) {
+  fun signalAll(owner: Any? = null) {
     ensureLocked(owner, "notifyAll")
     val it = waiting.iterator()
     while (it.hasNext()) {
@@ -108,6 +109,6 @@ class Condition(val mutex: Mutex) {
   }
 }
 
-fun Mutex.newCondition(): Condition {
+internal fun Mutex.newCondition(): Condition {
   return Condition(this)
 }

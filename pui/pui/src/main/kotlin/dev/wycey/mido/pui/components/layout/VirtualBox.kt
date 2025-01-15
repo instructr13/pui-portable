@@ -8,50 +8,51 @@ import dev.wycey.mido.pui.layout.constraints.BoxConstraints
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.box.ConstrainedBoxRenderer
 
-class VirtualBox
+public class VirtualBox
   @JvmOverloads
   constructor(
     child: Component? = null,
-    val width: Float? = null,
-    val height: Float? = null,
+    width: Float? = null,
+    height: Float? = null,
     key: String? = null
   ) :
   SingleChildRendererComponent(key, child) {
-    companion object {
+    public companion object {
       @JvmStatic
       @JvmOverloads
-      fun expand(
+      public fun expand(
         child: Component? = null,
         key: String? = null
-      ) = VirtualBox(child, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, key)
+      ): VirtualBox = VirtualBox(child, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, key)
 
       @JvmStatic
       @JvmOverloads
-      fun shrink(
+      public fun shrink(
         child: Component? = null,
         key: String? = null
-      ) = VirtualBox(child, 0f, 0f, key)
+      ): VirtualBox = VirtualBox(child, 0f, 0f, key)
 
       @JvmStatic
       @JvmOverloads
-      fun square(
+      public fun square(
         child: Component? = null,
         size: Float,
         key: String? = null
-      ) = VirtualBox(child, size, size, key)
+      ): VirtualBox = VirtualBox(child, size, size, key)
 
       @JvmStatic
       @JvmOverloads
-      fun fromSize(
+      public fun fromSize(
         child: Component? = null,
         size: Size,
         key: String? = null
-      ) = VirtualBox(child, size.width, size.height, key)
+      ): VirtualBox = VirtualBox(child, size.width, size.height, key)
     }
 
     private val additionalConstraints = BoxConstraints.tightFor(width, height)
 
-    override fun createRenderer(context: BuildContext) = ConstrainedBoxRenderer(additionalConstraints)
+    override fun createRenderer(context: BuildContext): ConstrainedBoxRenderer =
+      ConstrainedBoxRenderer(additionalConstraints)
 
     override fun updateRenderer(
       context: BuildContext,

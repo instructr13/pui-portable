@@ -6,20 +6,20 @@ import dev.wycey.mido.pui.events.mouse.MouseButtons
 import dev.wycey.mido.pui.events.mouse.MouseEventArgs
 import dev.wycey.mido.pui.events.mouse.gestures.*
 
-interface MouseEventBridgeContract {
+internal interface MouseEventBridgeContract {
   fun translateMouseEvent(e: MouseEventArgs)
 
   fun handleMouseWheel(e: MouseEventArgs)
 }
 
-class MouseEventBridge internal constructor() : MouseEventBridgeContract,
+public class MouseEventBridge internal constructor() : MouseEventBridgeContract,
   BridgeBaseWithAutoInit() {
-    companion object {
+    public companion object {
       @JvmField
-      var instanceNullable: MouseEventBridge? = null
+      internal var instanceNullable: MouseEventBridge? = null
 
       @JvmStatic
-      val instance get() = checkInstance(instanceNullable)
+      public val instance: MouseEventBridge get() = checkInstance(instanceNullable)
     }
 
     override fun initInstance() {

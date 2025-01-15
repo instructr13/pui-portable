@@ -30,6 +30,8 @@ java {
 }
 
 kotlin {
+  explicitApi()
+
   jvmToolchain(17)
 }
 

@@ -1,10 +1,10 @@
 package dev.wycey.mido.pui.events.mouse
 
-class GlobalMousePointer {
+internal class GlobalMousePointer {
   var dragging = false
   var pressing = false
 }
 
-object GlobalMouseState {
+internal object GlobalMouseState {
   val pointer = listOf(GlobalMousePointer())
 }

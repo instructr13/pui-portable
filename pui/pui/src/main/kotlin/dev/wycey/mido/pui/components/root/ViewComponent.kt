@@ -7,7 +7,7 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.elements.root.ViewElement
 import dev.wycey.mido.pui.renderer.view.ViewRenderer
 
-class ViewComponent(val child: Component, key: String? = null) :
+internal class ViewComponent(val child: Component, key: String? = null) :
   StatelessComponent(key) {
   inner class InnerViewComponent(private val _builder: () -> Component) :
     RendererComponent() {

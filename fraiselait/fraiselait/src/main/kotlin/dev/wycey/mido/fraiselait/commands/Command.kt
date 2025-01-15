@@ -2,16 +2,16 @@ package dev.wycey.mido.fraiselait.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 
-data class Command(private var innerObject: CommandBuilder) {
-  companion object {
+public data class Command(private var innerObject: CommandBuilder) {
+  public companion object {
     @JvmStatic
-    val RESET = CommandBuilder().changeColor(0, 0, 0).changeLedBuiltin(false).noTone().build()
+    public val RESET: Command = CommandBuilder().changeColor(0, 0, 0).changeLedBuiltin(false).noTone().build()
   }
 
-  val flags get() = innerObject.flags
-  val pinChanges get() = innerObject.pins
+  internal val flags get() = innerObject.flags
+  internal val pinChanges get() = innerObject.pins
 
-  fun toDataBytes(
+  public fun toDataBytes(
     mapper: ObjectMapper,
     deviceId: String
   ): ByteArray {
@@ -22,5 +22,5 @@ data class Command(private var innerObject: CommandBuilder) {
     return flagsBytes + deviceIdBytes + data
   }
 
-  fun merge(other: Command) = Command(innerObject.merge(other.innerObject))
+  public fun merge(other: Command): Command = Command(innerObject.merge(other.innerObject))
 }

@@ -1,6 +1,6 @@
 package dev.wycey.mido.fraiselait.constants
 
-const val PROTOCOL_VERSION: UShort = 200U
+public const val PROTOCOL_VERSION: UShort = 200U
 
-const val MAGIC_COMMAND_NEGOTIATE = 0xCAFEFACEU
-const val MAGIC_COMMAND_DISCONNECT = 0xCAFEDEADU
+public const val MAGIC_COMMAND_NEGOTIATE: UInt = 0xCAFEFACEU
+public const val MAGIC_COMMAND_DISCONNECT: UInt = 0xCAFEDEADU

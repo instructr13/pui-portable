@@ -2,6 +2,6 @@ package dev.wycey.mido.leinwand.draw
 
 import processing.core.PGraphics
 
-interface Drawable {
+internal interface Drawable {
   fun draw(base: PGraphics)
 }

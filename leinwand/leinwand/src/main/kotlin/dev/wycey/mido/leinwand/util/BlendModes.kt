@@ -2,8 +2,9 @@ package dev.wycey.mido.leinwand.util
 
 import processing.core.PApplet
 
-object BlendModes {
-  val blendNameToBlendMode =
+public object BlendModes {
+  @JvmStatic
+  public val blendNameToBlendMode: Map<String, Int> =
     mapOf(
       "通常" to PApplet.NORMAL,
       "加算" to PApplet.ADD,
@@ -21,5 +22,5 @@ object BlendModes {
       "焼き込み" to PApplet.BURN
     )
 
-  val blendModeToBlendName = blendNameToBlendMode.entries.associate { (k, v) -> v to k }
+  public val blendModeToBlendName: Map<Int, String> = blendNameToBlendMode.entries.associate { (k, v) -> v to k }
 }

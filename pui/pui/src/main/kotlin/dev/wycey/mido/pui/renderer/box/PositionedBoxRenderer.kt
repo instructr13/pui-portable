@@ -5,7 +5,7 @@ import dev.wycey.mido.pui.layout.AlignmentFactor
 import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.layout.constraints.BoxConstraints
 
-class PositionedBoxRenderer(initialAlignment: AlignmentFactor = Alignment.center, child: BoxRenderer? = null) :
+public class PositionedBoxRenderer(initialAlignment: AlignmentFactor = Alignment.center, child: BoxRenderer? = null) :
   AlignedBoxRenderer(initialAlignment, child) {
   override fun computeDryLayout(constraints: BoxConstraints): Size {
     val shrinkWrapWidth = constraints.maxWidth == Float.POSITIVE_INFINITY

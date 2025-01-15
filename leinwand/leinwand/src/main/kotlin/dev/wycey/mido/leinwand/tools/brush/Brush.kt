@@ -12,12 +12,12 @@ internal abstract class Brush(protected val handle: dev.wycey.mido.leinwand.Lein
   abstract var size: Int
   protected val imageCache = mutableMapOf<Int, Pair<PImage, Point>>()
 
-  fun _createCursor(size: Int) = imageCache.getOrPut(size) { createCursor(size) }
+  fun defaultCreateCursor(size: Int) = imageCache.getOrPut(size) { createCursor(size) }
 
   abstract fun createCursor(size: Int): Pair<PImage, Point>
 
   override fun applyCursor(applet: PApplet) {
-    val (image, hotspot) = _createCursor(size)
+    val (image, hotspot) = defaultCreateCursor(size)
 
     applet.cursor(image, hotspot.x.toInt(), hotspot.y.toInt())
   }

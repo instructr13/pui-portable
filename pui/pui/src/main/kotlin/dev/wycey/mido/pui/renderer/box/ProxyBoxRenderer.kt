@@ -11,7 +11,9 @@ import dev.wycey.mido.pui.renderer.delegations.RendererWithChildContract
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-abstract class ProxyBoxRenderer(private val rendererWithChild: RendererWithChild<BoxRenderer> = RendererWithChild()) :
+public abstract class ProxyBoxRenderer(
+  private val rendererWithChild: RendererWithChild<BoxRenderer> = RendererWithChild()
+) :
   BoxRenderer(), RendererWithChildContract<BoxRenderer> by rendererWithChild {
   init {
     rendererWithChild.that = this

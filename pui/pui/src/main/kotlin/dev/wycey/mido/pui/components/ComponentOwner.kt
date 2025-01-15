@@ -2,13 +2,13 @@ package dev.wycey.mido.pui.components
 
 import dev.wycey.mido.pui.elements.base.Element
 
-class ComponentOwner {
+public class ComponentOwner {
   private val dirtyElements = mutableListOf<Element>()
   private var scheduledFlushDirtyComponents = false
   private var dirtyElementsNeedsResorting: Boolean? = null
-  val inactiveElements = mutableListOf<Element>()
+  internal val inactiveElements = mutableListOf<Element>()
 
-  fun scheduleRebuild(element: Element) {
+  internal fun scheduleRebuild(element: Element) {
     if (element.inDirtyList) {
       dirtyElementsNeedsResorting = true
 
@@ -19,7 +19,7 @@ class ComponentOwner {
     element.inDirtyList = true
   }
 
-  fun buildScope(f: (() -> Unit)? = null) {
+  internal fun buildScope(f: (() -> Unit)? = null) {
     if (f == null && dirtyElements.isEmpty()) return
 
     scheduledFlushDirtyComponents = true
@@ -61,7 +61,7 @@ class ComponentOwner {
     dirtyElementsNeedsResorting = null
   }
 
-  fun finalizeFrame() {
+  internal fun finalizeFrame() {
     fun unmount(element: Element) {
       element.visitChildren {
         unmount(it)

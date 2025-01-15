@@ -1,8 +1,6 @@
 package dev.wycey.mido.pui.events
 
-typealias EventCallback<T> = (T) -> Unit
-
-open class EventDelegate<T> : Iterable<T> {
+internal open class EventDelegate<T : Function<*>> : Iterable<T> {
   private val events = mutableListOf<T>()
 
   override fun iterator(): Iterator<T> {

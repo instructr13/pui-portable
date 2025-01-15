@@ -5,9 +5,9 @@ import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.root.RootComponent
 import dev.wycey.mido.pui.elements.base.Element
 
-class RootElement(component: RootComponent) : Element(component) {
+public class RootElement(component: RootComponent) : Element(component) {
   private var child: Element? = null
-  var newComponent: Component? = null
+  internal var newComponent: Component? = null
 
   override fun visitChildren(visitor: (element: Element) -> Unit) {
     if (child != null) visitor(child!!)
@@ -19,7 +19,7 @@ class RootElement(component: RootComponent) : Element(component) {
   ) {
     super.mount(parent, newSlot)
 
-    _rebuild()
+    rebuild()
 
     super.performRebuild()
   }
@@ -27,7 +27,7 @@ class RootElement(component: RootComponent) : Element(component) {
   override fun update(newComponent: Component) {
     super.update(newComponent)
 
-    _rebuild()
+    rebuild()
   }
 
   override fun performRebuild() {
@@ -42,11 +42,11 @@ class RootElement(component: RootComponent) : Element(component) {
     super.performRebuild()
   }
 
-  private fun _rebuild() {
+  private fun rebuild() {
     child = updateChild(child, (component as RootComponent).child, null)
   }
 
-  fun assignOwner(owner: ComponentOwner) {
+  internal fun assignOwner(owner: ComponentOwner) {
     this.owner = owner
   }
 }

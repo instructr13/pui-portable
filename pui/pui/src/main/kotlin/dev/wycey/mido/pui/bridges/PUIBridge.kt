@@ -2,7 +2,7 @@ package dev.wycey.mido.pui.bridges
 
 import processing.core.PApplet
 
-class PUIBridge private constructor(
+public class PUIBridge private constructor(
   private val mouseEventBridge: MouseEventBridge = MouseEventBridge(),
   private val frameEventBridge: FrameEventBridge = FrameEventBridge(),
   private val eventHandlingBridge: EventHandlingBridge =
@@ -28,9 +28,9 @@ class PUIBridge private constructor(
   DisplayBridgeContract by displayBridge,
   RendererBridgeContract by rendererBridge,
   ComponentsBridgeContract by componentsBridge {
-  companion object {
+  public companion object {
     @JvmStatic
-    fun init(applet: PApplet): ComponentsBridge {
+    public fun init(applet: PApplet): ComponentsBridge {
       BridgeBase.applet = applet
 
       if (ComponentsBridge.instanceNullable == null) {

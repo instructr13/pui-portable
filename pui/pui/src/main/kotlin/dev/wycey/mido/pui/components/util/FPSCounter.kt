@@ -8,7 +8,7 @@ import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.util.round
 
-class FPSCounter
+public class FPSCounter
   @JvmOverloads
   constructor(
     private val prefix: String = "FPS: ",

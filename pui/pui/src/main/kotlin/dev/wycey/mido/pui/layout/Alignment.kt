@@ -2,10 +2,10 @@ package dev.wycey.mido.pui.layout
 
 import dev.wycey.mido.pui.layout.constraints.lerp
 
-abstract class AlignmentFactor {
-  companion object {
+public abstract class AlignmentFactor {
+  public companion object {
     @JvmStatic
-    fun lerp(
+    public fun lerp(
       a: AlignmentFactor?,
       b: AlignmentFactor?,
       t: Float
@@ -42,21 +42,21 @@ abstract class AlignmentFactor {
     override fun resolve() = Alignment(x + start, y)
   }
 
-  abstract val x: Float
-  abstract val start: Float
-  abstract val y: Float
+  public abstract val x: Float
+  public abstract val start: Float
+  public abstract val y: Float
 
-  abstract operator fun unaryMinus(): AlignmentFactor
+  public abstract operator fun unaryMinus(): AlignmentFactor
 
-  abstract operator fun plus(other: AlignmentFactor): AlignmentFactor
+  public abstract operator fun plus(other: AlignmentFactor): AlignmentFactor
 
-  abstract operator fun times(other: Float): AlignmentFactor
+  public abstract operator fun times(other: Float): AlignmentFactor
 
-  abstract operator fun div(other: Float): AlignmentFactor
+  public abstract operator fun div(other: Float): AlignmentFactor
 
-  abstract operator fun rem(other: Float): AlignmentFactor
+  public abstract operator fun rem(other: Float): AlignmentFactor
 
-  fun alongOffset(offset: Point): Point {
+  public fun alongOffset(offset: Point): Point {
     val centerX = offset.x / 2
     val centerY = offset.y / 2
 
@@ -66,7 +66,8 @@ abstract class AlignmentFactor {
     )
   }
 
-  override fun equals(other: Any?) = other is AlignmentFactor && x == other.x && start == other.start && y == other.y
+  override fun equals(other: Any?): Boolean =
+    other is AlignmentFactor && x == other.x && start == other.start && y == other.y
 
   override fun hashCode(): Int {
     var result = x.hashCode()
@@ -75,13 +76,13 @@ abstract class AlignmentFactor {
     return result
   }
 
-  abstract fun resolve(): Alignment
+  internal abstract fun resolve(): Alignment
 }
 
-class Alignment(override val x: Float, override val y: Float) : AlignmentFactor() {
-  companion object {
+public class Alignment(override val x: Float, override val y: Float) : AlignmentFactor() {
+  public companion object {
     @JvmStatic
-    fun lerp(
+    public fun lerp(
       a: Alignment?,
       b: Alignment?,
       t: Float
@@ -95,52 +96,52 @@ class Alignment(override val x: Float, override val y: Float) : AlignmentFactor(
     }
 
     @JvmField
-    val topLeft = Alignment(-1f, -1f)
+    public val topLeft: Alignment = Alignment(-1f, -1f)
 
     @JvmField
-    val topCenter = Alignment(0f, -1f)
+    public val topCenter: Alignment = Alignment(0f, -1f)
 
     @JvmField
-    val topRight = Alignment(1f, -1f)
+    public val topRight: Alignment = Alignment(1f, -1f)
 
     @JvmField
-    val centerLeft = Alignment(-1f, 0f)
+    public val centerLeft: Alignment = Alignment(-1f, 0f)
 
     @JvmField
-    val center = Alignment(0f, 0f)
+    public val center: Alignment = Alignment(0f, 0f)
 
     @JvmField
-    val centerRight = Alignment(1f, 0f)
+    public val centerRight: Alignment = Alignment(1f, 0f)
 
     @JvmField
-    val bottomLeft = Alignment(-1f, 1f)
+    public val bottomLeft: Alignment = Alignment(-1f, 1f)
 
     @JvmField
-    val bottomCenter = Alignment(0f, 1f)
+    public val bottomCenter: Alignment = Alignment(0f, 1f)
 
     @JvmField
-    val bottomRight = Alignment(1f, 1f)
+    public val bottomRight: Alignment = Alignment(1f, 1f)
   }
 
   override val start: Float = 0f
 
-  override fun unaryMinus() = Alignment(-x, -y)
+  override fun unaryMinus(): Alignment = Alignment(-x, -y)
 
-  override fun plus(other: AlignmentFactor) = Alignment(x + other.x, y + other.y)
+  override fun plus(other: AlignmentFactor): Alignment = Alignment(x + other.x, y + other.y)
 
-  override fun times(other: Float) = Alignment(x * other, y * other)
+  override fun times(other: Float): Alignment = Alignment(x * other, y * other)
 
-  override fun div(other: Float) = Alignment(x / other, y / other)
+  override fun div(other: Float): Alignment = Alignment(x / other, y / other)
 
-  override fun rem(other: Float) = Alignment(x % other, y % other)
+  override fun rem(other: Float): Alignment = Alignment(x % other, y % other)
 
-  override fun resolve() = this
+  override fun resolve(): Alignment = this
 }
 
-class AlignmentDirectional(override val start: Float, override val y: Float) : AlignmentFactor() {
-  companion object {
+public class AlignmentDirectional(override val start: Float, override val y: Float) : AlignmentFactor() {
+  public companion object {
     @JvmStatic
-    fun lerp(
+    public fun lerp(
       a: AlignmentDirectional?,
       b: AlignmentDirectional?,
       t: Float
@@ -154,44 +155,45 @@ class AlignmentDirectional(override val start: Float, override val y: Float) : A
     }
 
     @JvmField
-    val topStart = AlignmentDirectional(-1f, -1f)
+    public val topStart: AlignmentDirectional = AlignmentDirectional(-1f, -1f)
 
     @JvmField
-    val topCenter = AlignmentDirectional(0f, -1f)
+    public val topCenter: AlignmentDirectional = AlignmentDirectional(0f, -1f)
 
     @JvmField
-    val topEnd = AlignmentDirectional(1f, -1f)
+    public val topEnd: AlignmentDirectional = AlignmentDirectional(1f, -1f)
 
     @JvmField
-    val centerStart = AlignmentDirectional(-1f, 0f)
+    public val centerStart: AlignmentDirectional = AlignmentDirectional(-1f, 0f)
 
     @JvmField
-    val center = AlignmentDirectional(0f, 0f)
+    public val center: AlignmentDirectional = AlignmentDirectional(0f, 0f)
 
     @JvmField
-    val centerEnd = AlignmentDirectional(1f, 0f)
+    public val centerEnd: AlignmentDirectional = AlignmentDirectional(1f, 0f)
 
     @JvmField
-    val bottomStart = AlignmentDirectional(-1f, 1f)
+    public val bottomStart: AlignmentDirectional = AlignmentDirectional(-1f, 1f)
 
     @JvmField
-    val bottomCenter = AlignmentDirectional(0f, 1f)
+    public val bottomCenter: AlignmentDirectional = AlignmentDirectional(0f, 1f)
 
     @JvmField
-    val bottomEnd = AlignmentDirectional(1f, 1f)
+    public val bottomEnd: AlignmentDirectional = AlignmentDirectional(1f, 1f)
   }
 
   override val x: Float = 0f
 
-  override fun unaryMinus() = AlignmentDirectional(-start, y)
+  override fun unaryMinus(): AlignmentDirectional = AlignmentDirectional(-start, y)
 
-  override fun plus(other: AlignmentFactor) = AlignmentDirectional(start + other.start, y + other.y)
+  override fun plus(other: AlignmentFactor): AlignmentDirectional =
+    AlignmentDirectional(start + other.start, y + other.y)
 
-  override fun times(other: Float) = AlignmentDirectional(start * other, y * other)
+  override fun times(other: Float): AlignmentDirectional = AlignmentDirectional(start * other, y * other)
 
-  override fun div(other: Float) = AlignmentDirectional(start / other, y / other)
+  override fun div(other: Float): AlignmentDirectional = AlignmentDirectional(start / other, y / other)
 
-  override fun rem(other: Float) = AlignmentDirectional(start % other, y % other)
+  override fun rem(other: Float): AlignmentDirectional = AlignmentDirectional(start % other, y % other)
 
   override fun resolve() = Alignment(start, y)
 }

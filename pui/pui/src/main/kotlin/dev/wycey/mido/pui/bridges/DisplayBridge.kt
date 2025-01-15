@@ -1,18 +1,18 @@
 package dev.wycey.mido.pui.bridges
 
-interface DisplayBridgeContract
+internal interface DisplayBridgeContract
 
-class DisplayBridge internal constructor(
+public class DisplayBridge internal constructor(
   private val eventHandlingBridge: EventHandlingBridge
 ) : DisplayBridgeContract,
   EventHandlingBridgeContract by eventHandlingBridge,
   BridgeBase() {
-  companion object {
+  public companion object {
     @JvmField
-    var instanceNullable: DisplayBridge? = null
+    internal var instanceNullable: DisplayBridge? = null
 
     @JvmStatic
-    val instance get() = checkInstance(instanceNullable)
+    public val instance: DisplayBridge get() = checkInstance(instanceNullable)
   }
 
   override fun initInstance() {

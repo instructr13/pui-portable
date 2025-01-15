@@ -10,7 +10,7 @@ import java.util.*
  * Modified by Mido
  */
 
-class DepthFirstTree<T> : Iterable<T> {
+public class DepthFirstTree<T> : Iterable<T> {
   private val root = TreeNode<T>(0, 0, -1, 0)
   private val nodes = mutableListOf(TreeMap<Int, TreeNode<T>>())
   private var depth = 1
@@ -24,9 +24,9 @@ class DepthFirstTree<T> : Iterable<T> {
     nodes[0][0] = root
   }
 
-  val isNotEmpty get() = nodes[0].isNotEmpty()
+  public val isNotEmpty: Boolean get() = nodes[0].isNotEmpty()
 
-  fun add(
+  public fun add(
     depth: Int,
     parentKey: Int,
     key: Int,
@@ -41,14 +41,14 @@ class DepthFirstTree<T> : Iterable<T> {
     nodes[depth + 1][key] = newNode
   }
 
-  fun clear() {
+  public fun clear() {
     nodes.clear()
     nodes.add(TreeMap())
     depth = 1
     id = 1
   }
 
-  fun clone(): DepthFirstTree<T> {
+  public fun clone(): DepthFirstTree<T> {
     val newTree = DepthFirstTree<T>()
 
     for (i in 0..depth) {

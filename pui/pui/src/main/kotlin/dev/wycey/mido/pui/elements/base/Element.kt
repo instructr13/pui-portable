@@ -15,7 +15,7 @@ internal object NullWidget : Component() {
 
 internal object NullElement : Element(NullWidget)
 
-abstract class Element(private var _component: Component?) : BuildContext, Comparable<Element> {
+public abstract class Element(private var _component: Component?) : BuildContext, Comparable<Element> {
   override var component: Component
     get() = _component!!
     set(value) {
@@ -53,12 +53,12 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
       return null
     }
 
-  var parent: Element? = null
+  public var parent: Element? = null
 
-  var slot: Any? = null
+  public var slot: Any? = null
     protected set
 
-  open val renderer: RendererObject?
+  public open val renderer: RendererObject?
     get() {
       var current: Element? = this
 
@@ -73,7 +73,7 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
       return null
     }
 
-  open val rendererAttachingChild: Element?
+  public open val rendererAttachingChild: Element?
     get() {
       var next: Element? = null
 
@@ -84,13 +84,13 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
       return next
     }
 
-  var depth: Int = 1
+  public var depth: Int = 1
     private set
 
-  var dirty = true
+  public var dirty: Boolean = true
     private set
 
-  var inDirtyList = false
+  internal var inDirtyList = false
 
   override fun findRenderer(): RendererObject? = renderer
 
@@ -102,7 +102,7 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     }
   }
 
-  override fun visitChildElements(visitor: (element: Element) -> Unit) = visitChildren(visitor)
+  override fun visitChildElements(visitor: (element: Element) -> Unit): Unit = visitChildren(visitor)
 
   override fun compareTo(other: Element): Int {
     val diff = depth - other.depth
@@ -118,7 +118,7 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     return 0
   }
 
-  open fun visitChildren(visitor: (element: Element) -> Unit) {}
+  public open fun visitChildren(visitor: (element: Element) -> Unit) {}
 
   protected open fun inflateComponent(
     newComponent: Component,
@@ -208,7 +208,7 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     return newChild
   }
 
-  open fun attachRenderer(newSlot: Any?) {
+  public open fun attachRenderer(newSlot: Any?) {
     visitChildren {
       it.attachRenderer(newSlot)
     }
@@ -216,7 +216,7 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     slot = newSlot
   }
 
-  open fun detachRenderer() {
+  public open fun detachRenderer() {
     visitChildren {
       it.detachRenderer()
     }
@@ -224,7 +224,7 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     slot = null
   }
 
-  open fun update(newComponent: Component) {
+  public open fun update(newComponent: Component) {
     component = newComponent
   }
 
@@ -372,13 +372,13 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     owner?.scheduleRebuild(this)
   }
 
-  open fun rebuild(force: Boolean = false) {
+  public open fun rebuild(force: Boolean = false) {
     if (!dirty && !force) return
 
     performRebuild()
   }
 
-  open fun mount(
+  public open fun mount(
     parent: Element?,
     newSlot: Any?
   ) {
@@ -392,23 +392,23 @@ abstract class Element(private var _component: Component?) : BuildContext, Compa
     }
   }
 
-  open fun unmount() {
+  public open fun unmount() {
     _component = null
   }
 
-  open fun needBuild() {
+  public open fun needBuild() {
     markAsDirty()
   }
 
-  open fun performRebuild() {
+  public open fun performRebuild() {
     dirty = false
   }
 
-  open fun activate() {
+  public open fun activate() {
     if (dirty) {
       owner!!.scheduleRebuild(this)
     }
   }
 
-  open fun deactivate() {}
+  public open fun deactivate() {}
 }

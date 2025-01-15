@@ -2,7 +2,7 @@ package dev.wycey.mido.pui.components.text
 
 import dev.wycey.mido.pui.util.processing.TextAlign
 
-data class TextStyle
+public data class TextStyle
   @JvmOverloads
   constructor(
     val color: Int = 0,

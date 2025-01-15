@@ -1,16 +1,18 @@
 package dev.wycey.mido.pui.util.processing
 
-enum class ColorMode {
+import processing.core.PApplet
+
+public enum class ColorMode {
   RGB,
   HSB
 
   ;
 
-  fun apply(applet: processing.core.PApplet) {
+  public fun apply(applet: PApplet) {
     applet.colorMode(get())
   }
 
-  fun get() =
+  public fun get(): Int =
     when (this) {
       RGB -> processing.core.PConstants.RGB
       HSB -> processing.core.PConstants.HSB

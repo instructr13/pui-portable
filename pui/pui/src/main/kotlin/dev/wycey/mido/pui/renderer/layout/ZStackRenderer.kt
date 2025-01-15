@@ -12,21 +12,21 @@ import dev.wycey.mido.pui.renderer.delegations.ContainerRendererImpl
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-enum class ZStackFit {
+public enum class ZStackFit {
   Loose,
   Expand,
   PassThrough
 }
 
-open class ZStackRenderer(
+public open class ZStackRenderer(
   _alignment: AlignmentFactor = AlignmentDirectional.topStart,
   _fit: ZStackFit = ZStackFit.Loose,
-  var ignoreVisualOverflow: Boolean = false,
+  private var ignoreVisualOverflow: Boolean = false,
   children: List<BoxRenderer> = emptyList(),
   private val containerRendererImpl: ContainerRendererImpl<BoxRenderer, ZStackRendererData> = ContainerRendererImpl()
 ) : BoxRenderer(),
   ContainerRendererContract<BoxRenderer> by containerRendererImpl {
-  companion object {
+  private companion object {
     @JvmStatic
     fun layoutPositionedChild(
       child: BoxRenderer,
@@ -112,7 +112,7 @@ open class ZStackRenderer(
 
   private var hasVisualOverflow = false
 
-  var resolvedAlignment: Alignment? = null
+  public var resolvedAlignment: Alignment? = null
 
   private fun resolve() {
     if (resolvedAlignment != null) return
@@ -126,7 +126,7 @@ open class ZStackRenderer(
     markNeedsLayout()
   }
 
-  var alignment: AlignmentFactor = _alignment
+  public var alignment: AlignmentFactor = _alignment
     set(value) {
       if (field == value) return
 
@@ -135,7 +135,7 @@ open class ZStackRenderer(
       markNeedsResolution()
     }
 
-  var fit: ZStackFit = _fit
+  public var fit: ZStackFit = _fit
     set(value) {
       if (field == value) return
 
@@ -215,7 +215,7 @@ open class ZStackRenderer(
     ).apply { assert(isFinite()) }
   }
 
-  override fun computeDryLayout(constraints: BoxConstraints) =
+  override fun computeDryLayout(constraints: BoxConstraints): Size =
     computeSize(constraints) { child, childConstraints ->
       child.getDryLayout(childConstraints)
     }

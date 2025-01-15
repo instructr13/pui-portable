@@ -8,22 +8,21 @@ import dev.wycey.mido.pui.elements.base.NullElement
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.delegations.ContainerRendererContract
 
-open class MultiChildRendererElement(component: MultiChildRendererComponent) :
+public open class MultiChildRendererElement(component: MultiChildRendererComponent) :
   RendererElement<RendererObject>(component) {
-  fun getRenderer() = renderer as ContainerRendererContract<RendererObject>
-
-  protected val children get() = _children.toList()
+  internal val rendererContract
+    get() = renderer as ContainerRendererContract<RendererObject>
 
   private var _children = mutableListOf<Element>()
+  protected val children: List<Element> get() = _children.toList()
 
   override fun insertRendererChild(
     child: RendererObject,
     slot: Any?
   ) {
-    val renderer = getRenderer()
     val indexedSlot = slot as IndexedSlot<Element?>
 
-    renderer.insert(child, after = indexedSlot.value?.renderer)
+    rendererContract.insert(child, after = indexedSlot.value?.renderer)
   }
 
   override fun moveRendererChild(
@@ -31,17 +30,16 @@ open class MultiChildRendererElement(component: MultiChildRendererComponent) :
     oldSlot: Any?,
     newSlot: Any?
   ) {
-    val renderer = getRenderer()
     val newIndexedSlot = newSlot as IndexedSlot<Element?>
 
-    renderer.move(child, after = newIndexedSlot.value?.renderer)
+    rendererContract.move(child, after = newIndexedSlot.value?.renderer)
   }
 
   override fun removeRendererChild(
     child: RendererObject,
     slot: Any?
   ) {
-    val renderer = getRenderer()
+    val renderer = rendererContract
 
     renderer.remove(child)
   }

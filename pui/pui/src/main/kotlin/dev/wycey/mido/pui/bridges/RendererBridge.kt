@@ -6,11 +6,11 @@ import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.view.ViewConfiguration
 import dev.wycey.mido.pui.renderer.view.ViewRenderer
 
-interface RendererBridgeContract {
+internal interface RendererBridgeContract {
   fun drawFrame()
 }
 
-class RendererBridge internal constructor(
+public class RendererBridge internal constructor(
   private val mouseEventBridge: MouseEventBridge,
   private val frameEventBridge: FrameEventBridge,
   private val displayBridge: DisplayBridge
@@ -19,15 +19,15 @@ class RendererBridge internal constructor(
   FrameEventBridgeContract by frameEventBridge,
   DisplayBridgeContract by displayBridge,
   BridgeBase() {
-  companion object {
+  public companion object {
     @JvmField
-    var instanceNullable: RendererBridge? = null
+    internal var instanceNullable: RendererBridge? = null
 
     @JvmStatic
-    val instance get() = checkInstance(instanceNullable)
+    public val instance: RendererBridge get() = checkInstance(instanceNullable)
 
     @JvmStatic
-    lateinit var rootContext: RenderGlobalContext
+    public lateinit var rootContext: RenderGlobalContext
       private set
   }
 
@@ -53,7 +53,7 @@ class RendererBridge internal constructor(
     rootContext.flushPaint()
   }
 
-  fun addRenderView(view: ViewRenderer) {
+  internal fun addRenderView(view: ViewRenderer) {
     view.configuration = createViewConfiguration()
 
     applet.background(view.configuration.color)
@@ -67,7 +67,7 @@ class RendererBridge internal constructor(
       Size(applet.width.toFloat(), applet.height.toFloat())
     )
 
-  fun removeRenderView(view: ViewRenderer) {
+  internal fun removeRenderView(view: ViewRenderer) {
     this.view.remove(view)
   }
 }

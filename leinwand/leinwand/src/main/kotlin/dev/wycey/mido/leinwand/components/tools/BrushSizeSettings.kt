@@ -62,7 +62,7 @@ internal class BrushSizeSettings(private val brush: Brush, key: String? = null) 
                       child = VirtualBox(width = size.toFloat(), height = size.toFloat()),
                       mode = RenderMode.Center,
                       additionalPaint = { d, _, _ ->
-                        val image = brush._createCursor(size).first
+                        val image = brush.defaultCreateCursor(size).first
 
                         d.applet.image(image, 0f, 0f)
                       }

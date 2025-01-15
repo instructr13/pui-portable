@@ -2,22 +2,22 @@ package dev.wycey.mido.pui.state.signals.context
 
 import dev.wycey.mido.pui.state.signals.Subscriber
 
-class RootSignalContext(
+public class RootSignalContext(
   rootSubscriber: Subscriber,
   private val disposeComputations: MutableList<() -> Unit> = mutableListOf()
 ) : SignalContext(rootSubscriber) {
-  fun dispose() {
+  public fun dispose() {
     disposeComputations.forEach { it() }
 
     disposeComputations.clear()
   }
 
-  fun track(f: () -> Unit) {
+  public fun track(f: () -> Unit) {
     disposeComputations.add(f)
   }
 }
 
-fun createRootSignalContext(rootSubscriber: Subscriber): RootSignalContext {
+public fun createRootSignalContext(rootSubscriber: Subscriber): RootSignalContext {
   val rootContext = RootSignalContext(rootSubscriber)
 
   SignalContext.rootContext = rootContext
@@ -25,7 +25,7 @@ fun createRootSignalContext(rootSubscriber: Subscriber): RootSignalContext {
   return rootContext
 }
 
-fun nestRootSignalContextScope(
+public fun nestRootSignalContextScope(
   context: RootSignalContext,
   f: () -> Unit
 ) {
@@ -38,7 +38,7 @@ fun nestRootSignalContextScope(
   SignalContext.rootContext = previousRootContext
 }
 
-fun runRootContext(
+public fun runRootContext(
   context: RootSignalContext,
   f: () -> Unit
 ) {

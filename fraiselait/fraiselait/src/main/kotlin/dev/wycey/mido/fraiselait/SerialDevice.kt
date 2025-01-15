@@ -31,20 +31,20 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-class SerialDevice
+public class SerialDevice
   @JvmOverloads
   constructor(
     parent: PApplet,
     private val serialRate: Int,
     private val portSelection: SerialPortSelection = SerialPortSelection.Automatic,
-    var transferMode: TransferMode = TransferMode.MSGPACK,
+    public var transferMode: TransferMode = TransferMode.MSGPACK,
     private val additionalPinInformation: PinInformation = PinInformation()
   ) : Disposable, PrePhase {
-    companion object {
+    public companion object {
       private val mapperThreadLocal = ThreadLocal<ObjectMapper>()
 
       @JvmStatic
-      fun list(): Array<String> = Serial.list()
+      public fun list(): Array<String> = Serial.list()
 
       private fun getMapperContextElement(transferMode: TransferMode) =
         mapperThreadLocal.asContextElement(
@@ -64,7 +64,7 @@ class SerialDevice
         )
     }
 
-    constructor(
+    public constructor(
       parent: PApplet,
       serialRate: Int,
       portSelection: SerialPortSelection = SerialPortSelection.Automatic,
@@ -77,10 +77,10 @@ class SerialDevice
     private val maxDeserializationRetries = 10
     private val receivingDataQueue = ReceivingDataQueue()
 
-    var id: String? = null
+    public var id: String? = null
       private set
 
-    var pins: NonNullPinInformation? = null
+    public var pins: NonNullPinInformation? = null
       private set(value) {
         if (field == value) return
 
@@ -91,7 +91,7 @@ class SerialDevice
 
     private val stateLock = ReadWriteMutex()
 
-    var state: DeviceState? = null
+    public var state: DeviceState? = null
       get() =
         runBlocking {
           stateLock.withReadLock {
@@ -106,7 +106,7 @@ class SerialDevice
         stateListeners.forEach { it(value) }
       }
 
-    inner class SerialProxy : PApplet(), SerialReceiver {
+    internal inner class SerialProxy : PApplet(), SerialReceiver {
       private val retries = AtomicInteger(0)
 
       override fun serialEvent(serial: Serial) {
@@ -178,7 +178,7 @@ class SerialDevice
       }
     }
 
-    var port = if (portSelection is SerialPortSelection.Manual) portSelection.port else null
+    public var port: String? = if (portSelection is SerialPortSelection.Manual) portSelection.port else null
       set(value) {
         if (value == null) {
           disconnect()
@@ -208,7 +208,7 @@ class SerialDevice
       // Need to send additional '\n' to ensure that the device recognizes the disconnect command
       try {
         serial?.write(MAGIC_COMMAND_DISCONNECT.toString() + "\n")
-      } catch (e: RuntimeException) {
+      } catch (_: RuntimeException) {
         // Ignore I/O exceptions
       }
 
@@ -344,7 +344,8 @@ class SerialDevice
           val errorData =
             ErrorData(
               2,
-              "Negotiation failed: Incompatible protocol version: Expected $PROTOCOL_VERSION, got ${deviceInformation.version}"
+              "Negotiation failed: Incompatible protocol version: Expected $PROTOCOL_VERSION, " +
+                "got ${deviceInformation.version}"
             )
 
           sendData(errorData.toDataBytes(mapper))
@@ -373,7 +374,7 @@ class SerialDevice
     private val pinsListeners = mutableListOf<(NonNullPinInformation?) -> Unit>()
 
     @Volatile
-    var phase = SerialDevicePhase.NEW
+    public var phase: SerialDevicePhase = SerialDevicePhase.NEW
       private set(value) {
         field = value
 
@@ -399,7 +400,7 @@ class SerialDevice
         throwable.printStackTrace()
       }
 
-    val coroutineContext = Dispatchers.IO + job + exceptionHandler
+    private val coroutineContext = Dispatchers.IO + job + exceptionHandler
 
     init {
       DevicePortWatcher.start(parent)
@@ -466,28 +467,28 @@ class SerialDevice
                 }
               }
             }
-          } catch (e: RuntimeException) {
+          } catch (_: RuntimeException) {
             // Nothing happened
           }
         }
       }
     }
 
-    fun send(command: Command) =
-      runBlocking {
-        if (phase == SerialDevicePhase.DISPOSED) {
-          throw IllegalStateException("Cannot send command to disposed SerialDevice")
-        }
-
-        commandChannel.send(command)
-      }
-
-    fun sendDirect(command: Command) {
+    public fun send(
+      command: Command,
+      buffered: Boolean = true
+    ) {
       if (phase == SerialDevicePhase.DISPOSED) {
         throw IllegalStateException("Cannot send command to disposed SerialDevice")
       }
 
       runBlocking {
+        if (buffered == false) {
+          commandChannel.send(command)
+
+          return@runBlocking
+        }
+
         val ok =
           lock.withLock {
             runningCondition.awaitUntil(3.seconds) { phase == SerialDevicePhase.RUNNING }
@@ -507,7 +508,7 @@ class SerialDevice
       }
     }
 
-    fun refreshSerial() =
+    public fun refreshSerial(): Unit =
       runBlocking {
         lock.withLock {
           if (serial != null && phase == SerialDevicePhase.RUNNING) {
@@ -527,35 +528,35 @@ class SerialDevice
         }
       }
 
-    fun addPhaseChangeListener(callback: (SerialDevicePhase) -> Unit) {
+    public fun addPhaseChangeListener(callback: (SerialDevicePhase) -> Unit) {
       phaseListeners.add(callback)
     }
 
-    fun removePhaseChangeListener(callback: (SerialDevicePhase) -> Unit) {
+    public fun removePhaseChangeListener(callback: (SerialDevicePhase) -> Unit) {
       phaseListeners.remove(callback)
     }
 
-    fun addPinsChangeListener(callback: (NonNullPinInformation?) -> Unit) {
+    public fun addPinsChangeListener(callback: (NonNullPinInformation?) -> Unit) {
       pinsListeners.add(callback)
     }
 
-    fun removePinsChangeListener(callback: (NonNullPinInformation?) -> Unit) {
+    public fun removePinsChangeListener(callback: (NonNullPinInformation?) -> Unit) {
       pinsListeners.remove(callback)
     }
 
-    fun addStateChangeListener(callback: (DeviceState?) -> Unit) {
+    public fun addStateChangeListener(callback: (DeviceState?) -> Unit) {
       stateListeners.add(callback)
     }
 
-    fun removeStateChangeListener(callback: (DeviceState) -> Unit) {
+    public fun removeStateChangeListener(callback: (DeviceState) -> Unit) {
       stateListeners.remove(callback)
     }
 
-    fun registerToStateManager() {
+    public fun registerToStateManager() {
       StateManager.registeredDevice = this
     }
 
-    fun onDispose(callback: () -> Unit) {
+    public fun onDispose(callback: () -> Unit) {
       onDisposeCallbacks.add(callback)
     }
 
