@@ -43,15 +43,19 @@ public enum class StackFit {
 public data class StackParentRendererData(
   var flex: Int? = null,
   var fit: StackFit = StackFit.Expand
-) :
-  BoxRendererData(), ContainerRendererDataContract<BoxRenderer> by ContainerRendererData()
+) : BoxRendererData(),
+  ContainerRendererDataContract<BoxRenderer> by ContainerRendererData()
 
-private data class LayoutSizes(val main: Float, val cross: Float, val allocated: Float)
+private data class LayoutSizes(
+  val main: Float,
+  val cross: Float,
+  val allocated: Float
+)
 
 public class StackRenderer(
-  _direction: StackDirection,
-  _mainAxisAlignment: StackMainAxisAlignment = StackMainAxisAlignment.Start,
-  _crossAxisAlignment: StackCrossAxisAlignment = StackCrossAxisAlignment.Start,
+  initialDirection: StackDirection,
+  initialMainAxisAlignment: StackMainAxisAlignment = StackMainAxisAlignment.Start,
+  initialCrossAxisAlignment: StackCrossAxisAlignment = StackCrossAxisAlignment.Start,
   children: List<BoxRenderer> = emptyList(),
   private val containerRendererImpl: ContainerRendererImpl<BoxRenderer, StackParentRendererData> =
     ContainerRendererImpl()
@@ -63,7 +67,7 @@ public class StackRenderer(
     addAll(children)
   }
 
-  public var direction: StackDirection = _direction
+  public var direction: StackDirection = initialDirection
     set(value) {
       if (field == value) return
 
@@ -72,7 +76,7 @@ public class StackRenderer(
       markNeedsLayout()
     }
 
-  public var mainAxisAlignment: StackMainAxisAlignment = _mainAxisAlignment
+  public var mainAxisAlignment: StackMainAxisAlignment = initialMainAxisAlignment
     set(value) {
       if (field == value) return
 
@@ -81,7 +85,7 @@ public class StackRenderer(
       markNeedsLayout()
     }
 
-  public var crossAxisAlignment: StackCrossAxisAlignment = _crossAxisAlignment
+  public var crossAxisAlignment: StackCrossAxisAlignment = initialCrossAxisAlignment
     set(value) {
       if (field == value) return
 

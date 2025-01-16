@@ -5,7 +5,9 @@ import dev.wycey.mido.pui.state.signals.Unsubscribe
 import dev.wycey.mido.pui.state.signals.context.SignalContext
 import dev.wycey.mido.pui.state.signals.data.ComputedSignalData
 
-internal open class Computation<T : Any>(private val body: (previous: T?) -> T) {
+internal open class Computation<T : Any>(
+  private val body: (previous: T?) -> T
+) {
   companion object {
     private val initialComputationStack = ArrayDeque<Computation<*>.InitialComputation>()
 
@@ -86,7 +88,7 @@ internal open class Computation<T : Any>(private val body: (previous: T?) -> T) 
   }
 }
 
-internal inline fun createComputation(crossinline body: () -> Unit): Computation<Unit> = Computation<Unit> { body() }
+// internal inline fun createComputation(crossinline body: () -> Unit): Computation<Unit> = Computation<Unit> { body() }
 
 internal inline fun createComputation(
   noinline body: () -> Unit,
@@ -96,7 +98,7 @@ internal inline fun createComputation(
     override fun onNotify(value: Unit) = onNotify()
   }
 
-internal fun <T : Any> createComputation(body: (previous: T?) -> T) = Computation(body)
+// internal fun <T : Any> createComputation(body: (previous: T?) -> T) = Computation(body)
 
 internal inline fun <T : Any> createComputation(
   noinline body: (previous: T?) -> T,

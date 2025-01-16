@@ -13,7 +13,9 @@ import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.events.mouse.MouseButtons
 
-internal class LayerList(private val instanceId: Int) : StatefulComponent("layerList$instanceId") {
+internal class LayerList(
+  private val instanceId: Int
+) : StatefulComponent("layerList$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
     val currentLayer by computed { handle.layers[handle.activeLayerIndex] }
@@ -30,7 +32,8 @@ internal class LayerList(private val instanceId: Int) : StatefulComponent("layer
 
     val disableDown =
       createFunction {
-        currentLayer.name == "Root Layer" || currentLayer.lock ||
+        currentLayer.name == "Root Layer" ||
+          currentLayer.lock ||
           handle.layers[handle.activeLayerIndex - 1].name == "Root Layer"
       }
 
@@ -116,14 +119,16 @@ internal class LayerList(private val instanceId: Int) : StatefulComponent("layer
         val list = mutableListOf<Component>(header, VirtualBox(height = 8f), line)
 
         list.addAll(
-          handle.layers.withIndex().flatMap { (i, layer) ->
-            listOf(
-              LayerItem(instanceId, layer, i == handle.activeLayerIndex) {
-                handle.selectLayer(i)
-              },
-              line
-            )
-          }.asReversed()
+          handle.layers
+            .withIndex()
+            .flatMap { (i, layer) ->
+              listOf(
+                LayerItem(instanceId, layer, i == handle.activeLayerIndex) {
+                  handle.selectLayer(i)
+                },
+                line
+              )
+            }.asReversed()
         )
 
         list

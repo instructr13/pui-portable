@@ -3,15 +3,17 @@ package dev.wycey.mido.pui.elements.basic
 import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.StatefulComponent
 
-public class StatefulElement(component: StatefulComponent) : ComponentElement(component) {
-  private var _state: StatefulComponent.State? = component.createState()
-  internal val state get(): StatefulComponent.State = _state!!
+public class StatefulElement(
+  component: StatefulComponent
+) : ComponentElement(component) {
+  private var nullableState: StatefulComponent.State? = component.createState()
+  internal val state get(): StatefulComponent.State = nullableState!!
 
   private var rebuilt = false
 
   init {
-    state._element = this
-    state._component = component
+    state.linkedElement = this
+    state.component = component
 
     component.state = state
   }
@@ -42,7 +44,7 @@ public class StatefulElement(component: StatefulComponent) : ComponentElement(co
   override fun update(newComponent: Component) {
     super.update(newComponent)
 
-    state._component = newComponent as StatefulComponent
+    state.component = newComponent as StatefulComponent
 
     rebuild(true)
   }
@@ -66,9 +68,9 @@ public class StatefulElement(component: StatefulComponent) : ComponentElement(co
 
     state.dispose()
 
-    state._element = null
+    state.linkedElement = null
 
-    _state = null
+    nullableState = null
   }
 
   override fun needBuild() {

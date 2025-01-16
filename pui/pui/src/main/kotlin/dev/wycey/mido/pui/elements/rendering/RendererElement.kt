@@ -7,7 +7,9 @@ import dev.wycey.mido.pui.elements.base.Element
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.data.ParentRendererData
 
-public abstract class RendererElement<T : RendererObject>(component: RendererComponent) : Element(component) {
+public abstract class RendererElement<T : RendererObject>(
+  component: RendererComponent
+) : Element(component) {
   private var _renderer: T? = null
   override val renderer: RendererObject
     get() = _renderer!!
@@ -16,14 +18,14 @@ public abstract class RendererElement<T : RendererObject>(component: RendererCom
 
   private var ancestorRendererElement: RendererElement<RendererObject>? = null
 
-  private fun findAncestorRendererElement(): RendererElement<RendererObject> {
+  private fun findAncestorRendererElement(): RendererElement<RendererObject>? {
     var ancestor = parent
 
     while (ancestor != null && ancestor !is RendererElement<*>) {
       ancestor = ancestor.parent
     }
 
-    return ancestor as RendererElement<RendererObject>
+    return ancestor as RendererElement<RendererObject>?
   }
 
   private fun findAncestorParentRendererDataElements(): List<ParentRendererDataElement<ParentRendererData>> {
@@ -41,14 +43,14 @@ public abstract class RendererElement<T : RendererObject>(component: RendererCom
     return result
   }
 
-  private fun _performRebuild() {
+  private fun thisPerformRebuild() {
     (component as RendererComponent).updateRenderer(this, renderer)
 
     super.performRebuild()
   }
 
   override fun performRebuild() {
-    _performRebuild()
+    thisPerformRebuild()
   }
 
   override fun mount(
@@ -66,7 +68,7 @@ public abstract class RendererElement<T : RendererObject>(component: RendererCom
   override fun update(newComponent: Component) {
     super.update(newComponent)
 
-    _performRebuild()
+    thisPerformRebuild()
   }
 
   override fun unmount() {

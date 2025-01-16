@@ -9,18 +9,18 @@ import dev.wycey.mido.pui.state.subscription.runWithSubscriptionCallStack
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-public class ComputedSignal<T>(private val f: () -> T) : ReadOnlyProperty<Any, T> {
+public class ComputedSignal<T>(
+  private val f: () -> T
+) : ReadOnlyProperty<Any, T> {
   private var signal: Signal<T?> =
-    Signal(null).run {
+    Signal<T?>(null).apply {
       shouldSubscribe = false
       parentSignalData = ComputedSignalData(this@ComputedSignal)
-
-      this as Signal<T?>
     }
 
   private val computation =
-    createComputation({ signal._value = f() }) {
-      runWithSubscriptionCallStack(SubscriptionType.Untracked) { signal._value = f() }
+    createComputation({ signal.innerValue = f() }) {
+      runWithSubscriptionCallStack(SubscriptionType.Untracked) { signal.innerValue = f() }
     }
 
   internal val sources get() = computation.pureSignals

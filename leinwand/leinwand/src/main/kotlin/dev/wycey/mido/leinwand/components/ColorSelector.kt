@@ -10,7 +10,9 @@ import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.events.mouse.MouseButtons
 
-internal class ColorSelector(private val instanceId: Int) : StatefulComponent("colorSelector$instanceId") {
+internal class ColorSelector(
+  private val instanceId: Int
+) : StatefulComponent("colorSelector$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 

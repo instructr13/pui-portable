@@ -19,8 +19,8 @@ public enum class ZStackFit {
 }
 
 public open class ZStackRenderer(
-  _alignment: AlignmentFactor = AlignmentDirectional.topStart,
-  _fit: ZStackFit = ZStackFit.Loose,
+  initialAlignment: AlignmentFactor = AlignmentDirectional.topStart,
+  initialFit: ZStackFit = ZStackFit.Loose,
   private var ignoreVisualOverflow: Boolean = false,
   children: List<BoxRenderer> = emptyList(),
   private val containerRendererImpl: ContainerRendererImpl<BoxRenderer, ZStackRendererData> = ContainerRendererImpl()
@@ -126,7 +126,7 @@ public open class ZStackRenderer(
     markNeedsLayout()
   }
 
-  public var alignment: AlignmentFactor = _alignment
+  public var alignment: AlignmentFactor = initialAlignment
     set(value) {
       if (field == value) return
 
@@ -135,7 +135,7 @@ public open class ZStackRenderer(
       markNeedsResolution()
     }
 
-  public var fit: ZStackFit = _fit
+  public var fit: ZStackFit = initialFit
     set(value) {
       if (field == value) return
 
@@ -243,7 +243,8 @@ public open class ZStackRenderer(
           childParentRendererData,
           size,
           resolvedAlignment!!
-        ) || hasVisualOverflow
+        ) ||
+          hasVisualOverflow
       }
 
       child = childParentRendererData.nextSibling
@@ -260,7 +261,7 @@ public open class ZStackRenderer(
       val childParentRendererData = child.parentRendererData!! as ZStackRendererData
 
       currentScope.nestPositionalScope(childParentRendererData.offset) {
-        child!!.paint(d, currentScope)
+        child.paint(d, currentScope)
       }
 
       child = childParentRendererData.nextSibling

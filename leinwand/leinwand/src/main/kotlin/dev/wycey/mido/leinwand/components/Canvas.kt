@@ -14,8 +14,7 @@ internal class Canvas(
   private val instanceId: Int,
   private val initialSize: Size = Size(600f, 600f),
   key: String? = null
-) :
-  StatelessComponent(key) {
+) : StatelessComponent(key) {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 
@@ -28,8 +27,11 @@ internal class Canvas(
         }
       },
       onDrag = onDrag@{ e, type ->
-        if (type.button != MouseButtons.LEFT || e.delta.first < 0 || e.delta.second < 0 ||
-          e.delta.first > initialSize.width || e.delta.second > initialSize.height
+        if (type.button != MouseButtons.LEFT ||
+          e.delta.first < 0 ||
+          e.delta.second < 0 ||
+          e.delta.first > initialSize.width ||
+          e.delta.second > initialSize.height
         ) {
           return@onDrag
         }

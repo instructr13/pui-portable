@@ -16,8 +16,12 @@ public open class MultiDeviceOrchestrator
     public val serialRate: Int,
     public val transferMode: TransferMode = TransferMode.MSGPACK
   ) {
-    private val _devices: MutableSet<SerialDevice> = mutableSetOf()
-    public val devices: Set<SerialDevice> = _devices
+    private val _devices: MutableMap<String, SerialDevice> = mutableMapOf()
+    public val devices: Set<SerialDevice>
+      get() = _devices.values.toSet()
+
+    private val _namedDevices: MutableMap<String, SerialDevice> = mutableMapOf()
+    public val namedDevices: Map<String, SerialDevice> = _namedDevices
 
     init {
       DevicePortWatcher.listen {
@@ -40,15 +44,35 @@ public open class MultiDeviceOrchestrator
       device.addPhaseChangeListener {
         when (it) {
           SerialDevicePhase.RUNNING -> {
-            _devices.add(device)
+            if (_devices.put(device.id!!, device) != null) {
+              throw IllegalStateException("New device $device is already in the devices set")
+            }
+
+            println("New device: ${device.id}")
           }
 
           SerialDevicePhase.DISPOSED -> {
-            _devices.remove(device)
+            if (_devices.remove(device.id!!) == null) {
+              throw IllegalStateException("Disposed device $device was not in the devices set")
+            }
+
+            println("Removed device: ${device.id}")
+
+            if (_namedDevices.entries.removeIf { it.value.id == device.id }) {
+              println("Removed device name: ${device.id}")
+            }
           }
 
           SerialDevicePhase.PAUSED -> {
-            _devices.remove(device)
+            if (_devices.remove(device.id!!) == null) {
+              throw IllegalStateException("Paused device $device was not in the devices set")
+            }
+
+            println("Paused device: ${device.id}")
+
+            if (_namedDevices.entries.removeIf { it.value.id == device.id }) {
+              println("Removed named device: ${device.id}")
+            }
           }
 
           else -> {}
@@ -58,31 +82,54 @@ public open class MultiDeviceOrchestrator
       return device
     }
 
-    protected open fun updateDevices(ports: List<String>) {
-      val devicesNeedUpdate = devices.filter { it.port !in ports }
+    protected open fun disposeSerialDevice(device: SerialDevice) {
+      device.dispose()
+    }
 
-      devicesNeedUpdate.forEach {
-        it.dispose()
+    protected open fun updateDevices(ports: List<String>) {
+      val devicesToBeRemoved = _devices.values.filter { it.port !in ports }
+
+      devicesToBeRemoved.forEach {
+        disposeSerialDevice(it)
       }
 
-      val newDevices = ports.filter { port -> devices.none { it.port == port } }
+      val newDevices = ports.filter { port -> _devices.values.none { it.port == port } }
 
       newDevices.forEach {
         setupSerialDevice(it)
       }
     }
 
-    public fun sendSingle(
-      deviceId: String,
+    @JvmOverloads
+    public fun sendAll(
       command: Command,
       buffered: Boolean = true
     ) {
-      val device = devices.find { it.port == deviceId } ?: throw IllegalArgumentException("Device not found")
-
-      device.send(command, buffered)
+      _devices.values.forEach { it.send(command, true) }
     }
 
-    public fun sendAll(command: Command) {
-      devices.forEach { it.send(command) }
+    public fun getDevice(deviceId: String): SerialDevice? = _devices[deviceId]
+
+    public fun nameDevice(
+      deviceId: String,
+      name: String
+    ) {
+      val device = getDevice(deviceId) ?: return
+
+      _namedDevices[name] = device
+    }
+
+    public fun getNamedDevice(name: String): SerialDevice? = _namedDevices[name]
+
+    public fun unnameDevice(name: String) {
+      _namedDevices.remove(name)
+    }
+
+    public fun start() {
+      DevicePortWatcher.start(applet)
+    }
+
+    public fun stop() {
+      DevicePortWatcher.dispose()
     }
   }

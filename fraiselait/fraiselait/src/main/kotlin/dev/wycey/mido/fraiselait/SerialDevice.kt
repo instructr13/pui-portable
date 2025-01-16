@@ -2,6 +2,7 @@ package dev.wycey.mido.fraiselait
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.databind.DatabindException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
@@ -35,11 +36,12 @@ public class SerialDevice
   @JvmOverloads
   constructor(
     parent: PApplet,
-    private val serialRate: Int,
+    public val serialRate: Int,
     private val portSelection: SerialPortSelection = SerialPortSelection.Automatic,
     public var transferMode: TransferMode = TransferMode.MSGPACK,
     private val additionalPinInformation: PinInformation = PinInformation()
-  ) : Disposable, PrePhase {
+  ) : Disposable,
+    PrePhase {
     public companion object {
       private val mapperThreadLocal = ThreadLocal<ObjectMapper>()
 
@@ -51,9 +53,10 @@ public class SerialDevice
           value =
             when (transferMode) {
               TransferMode.JSON ->
-                jacksonMapperBuilder().enable(
-                  StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION
-                ).build()
+                jacksonMapperBuilder()
+                  .enable(
+                    StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION
+                  ).build()
 
               TransferMode.MSGPACK ->
                 MessagePackMapper().handleBigIntegerAndBigDecimalAsString().registerModule(
@@ -106,7 +109,9 @@ public class SerialDevice
         stateListeners.forEach { it(value) }
       }
 
-    internal inner class SerialProxy : PApplet(), SerialReceiver {
+    internal inner class SerialProxy :
+      PApplet(),
+      SerialReceiver {
       private val retries = AtomicInteger(0)
 
       override fun serialEvent(serial: Serial) {
@@ -212,7 +217,6 @@ public class SerialDevice
         // Ignore I/O exceptions
       }
 
-      id = null
       pins = null
       state = null
     }
@@ -254,7 +258,7 @@ public class SerialDevice
 
         serial.bufferUntil('\n'.code)
 
-        println("Established connection with port ${serial.port.portName}")
+        println("SerialDevice: Established connection with port ${serial.port.portName}")
 
         negotiateConnection(serial)
 
@@ -301,10 +305,11 @@ public class SerialDevice
 
     private fun negotiateConnection(serial: Serial) {
       val data = NegotiationData(additionalPinInformation)
+      var retries = 0
 
       CoroutineScope(coroutineContext).launch(
         getMapperContextElement(transferMode)
-      ) {
+      ) retry@{
         val mapper = mapperThreadLocal.get()
 
         // Flush all data before sending the negotiation data
@@ -317,6 +322,14 @@ public class SerialDevice
           delay(40)
 
           flushData()
+
+          retries++
+
+          if (retries >= 3) {
+            throw RuntimeException("Failed to disconnect from device")
+          }
+
+          return@retry // Retry negotiation
         }
 
         sendData(
@@ -336,9 +349,24 @@ public class SerialDevice
           throw RuntimeException("Error during negotiation (code ${errorData.code}): ${errorData.message}")
         }
 
-        val deviceInformation = mapper.readValue(deviceInformationBytes, DeviceInformation::class.java)
+        val deviceInformation =
+          try {
+            mapper.readValue(deviceInformationBytes, DeviceInformation::class.java)
+          } catch (e: DatabindException) {
+            flushData()
 
-        println("New device: ${deviceInformation.deviceId}")
+            println("Failed to deserialize device information, retrying negotiation")
+
+            delay(5000)
+
+            retries++
+
+            if (retries >= 3) {
+              throw RuntimeException("Failed to negotiate with device").initCause(e)
+            }
+
+            return@retry
+          }
 
         if (deviceInformation.version < PROTOCOL_VERSION.toInt()) {
           val errorData =
@@ -548,7 +576,7 @@ public class SerialDevice
       stateListeners.add(callback)
     }
 
-    public fun removeStateChangeListener(callback: (DeviceState) -> Unit) {
+    public fun removeStateChangeListener(callback: (DeviceState?) -> Unit) {
       stateListeners.remove(callback)
     }
 
@@ -609,4 +637,7 @@ public class SerialDevice
       result = 31 * result + (port?.hashCode() ?: 0)
       return result
     }
+
+    override fun toString(): String =
+      "SerialDevice(id=$id,rate=$serialRate,phase=$phase,state=$state,mode=$transferMode)"
   }

@@ -17,7 +17,10 @@ import dev.wycey.mido.pui.layout.Offstage
 import dev.wycey.mido.pui.state.signals.onDisposeEffect
 import dev.wycey.mido.pui.util.processing.RenderMode
 
-internal class BrushSizeSettings(private val brush: Brush, key: String? = null) : StatefulComponent(key) {
+internal class BrushSizeSettings(
+  private val brush: Brush,
+  key: String? = null
+) : StatefulComponent(key) {
   override fun build(context: BuildContext): Component {
     var size by signal(brush.size)
     var usesLightSensorAsBrushSize by signal(false)

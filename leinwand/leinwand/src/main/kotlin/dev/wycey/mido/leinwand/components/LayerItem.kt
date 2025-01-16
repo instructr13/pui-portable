@@ -26,8 +26,7 @@ internal class LayerItem(
   private val layer: Layer,
   private val active: Boolean = false,
   private val onSelect: () -> Unit
-) :
-  StatefulComponent("layerItem${layer.id}$active") {
+) : StatefulComponent("layerItem${layer.id}$active") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 

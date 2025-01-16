@@ -13,7 +13,9 @@ import dev.wycey.mido.pui.layout.EdgeInsets
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 
-internal class CommandBar(private val instanceId: Int) : StatelessComponent("commandBar$instanceId") {
+internal class CommandBar(
+  private val instanceId: Int
+) : StatelessComponent("commandBar$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
 

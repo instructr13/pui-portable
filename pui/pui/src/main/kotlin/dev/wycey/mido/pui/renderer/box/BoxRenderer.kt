@@ -84,13 +84,12 @@ public open class BoxRenderer : RendererObject() {
     return Point.ZERO
   }
 
-  public open fun safeGetAbsolutePosition(): Point? {
-    return try {
+  public open fun safeGetAbsolutePosition(): Point? =
+    try {
       getAbsolutePosition()
-    } catch (e: IllegalStateException) {
+    } catch (_: IllegalStateException) {
       null
     }
-  }
 
   public open fun getAbsolutePosition(): Point {
     val parentRendererData =

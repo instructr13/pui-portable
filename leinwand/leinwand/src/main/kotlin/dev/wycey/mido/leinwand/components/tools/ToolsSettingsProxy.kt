@@ -13,7 +13,9 @@ import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.layout.EdgeInsets
 
-internal class ToolsSettingsProxy(private val instanceId: Int) : StatefulComponent("toolsSettingsProxy$instanceId") {
+internal class ToolsSettingsProxy(
+  private val instanceId: Int
+) : StatefulComponent("toolsSettingsProxy$instanceId") {
   override fun build(context: BuildContext): Component {
     val handle = dev.wycey.mido.leinwand.LeinwandHandle.instances[instanceId]!!
     val tool = handle.currentTool

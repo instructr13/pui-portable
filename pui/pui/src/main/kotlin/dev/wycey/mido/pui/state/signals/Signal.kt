@@ -14,7 +14,9 @@ internal typealias Unsubscribe = () -> Unit
 private typealias Getter<T> = () -> T
 private typealias Setter<T> = (T) -> Unit
 
-public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> {
+public open class Signal<T>(
+  internal var innerValue: T
+) : ReadWriteProperty<Any, T> {
   internal companion object {
     @JvmField
     val subscriptionCalls = ArrayDeque<SubscriptionType>()
@@ -23,7 +25,7 @@ public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> 
     val lastSubscriptionCall get() = subscriptionCalls.lastOrNull()
 
     @JvmStatic
-    fun <T> valueOfSignal(signal: Signal<T>): T = signal._value
+    fun <T> valueOfSignal(signal: Signal<T>): T = signal.innerValue
   }
 
   internal var parentSignalData: ParentSignalData? = null
@@ -46,7 +48,7 @@ public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> 
   private fun getter(): Getter<T> =
     innerGetter@{
       if (lastSubscriptionCall is SubscriptionType.Untracked) {
-        return@innerGetter _value
+        return@innerGetter innerValue
       }
 
       Computation.lastComputation?.register(this)
@@ -61,7 +63,7 @@ public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> 
         }
       }
 
-      _value
+      innerValue
     }
 
   @Suppress("unused")
@@ -79,7 +81,7 @@ public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> 
 
   private fun setter(): Setter<T> =
     innerSetter@{
-      if (_value == it) return@innerSetter
+      if (innerValue == it) return@innerSetter
 
       when (lastSubscriptionCall) {
         is SubscriptionType.Untracked -> {
@@ -91,7 +93,7 @@ public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> 
         is SubscriptionType.Batch ->
           lastSubscriptionCall?.let { maybeBatch -> maybeBatch as? SubscriptionType.Batch }?.apply {
             updates.add {
-              _value = it
+              innerValue = it
             }
 
             effects.add {
@@ -141,12 +143,10 @@ public open class Signal<T>(internal var _value: T) : ReadWriteProperty<Any, T> 
   }
 
   internal open fun onNotify(value: T) {
-    this._value = value
+    this.innerValue = value
   }
 
-  override fun toString(): String {
-    return "Signal(value=$_value)"
-  }
+  override fun toString(): String = "Signal(value=$innerValue)"
 }
 
 public inline fun <reified T> signal(value: T): Signal<T> = Signal(value)

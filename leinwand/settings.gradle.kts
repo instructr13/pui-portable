@@ -10,8 +10,10 @@ dependencyResolutionManagement {
   repositories {
     mavenCentral()
 
-    maven(url = "https://jitpack.io")
     maven(url = "https://jogamp.org/deployment/maven")
+
+    // Required for the ui-booster library
+    maven(url = "https://jitpack.io")
   }
 
   versionCatalogs {

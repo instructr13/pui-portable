@@ -15,7 +15,9 @@ import kotlin.time.ExperimentalTime
 /**
  * This should be part of kotlin-coroutines: https://github.com/Kotlin/kotlinx.coroutines/issues/2531
  */
-internal class Condition(private val mutex: Mutex) {
+internal class Condition(
+  private val mutex: Mutex
+) {
   internal val waiting = LinkedHashSet<Mutex>()
 
   /**
@@ -109,6 +111,4 @@ internal class Condition(private val mutex: Mutex) {
   }
 }
 
-internal fun Mutex.newCondition(): Condition {
-  return Condition(this)
-}
+internal fun Mutex.newCondition(): Condition = Condition(this)

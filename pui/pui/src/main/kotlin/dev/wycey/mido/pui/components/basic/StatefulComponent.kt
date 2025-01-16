@@ -12,7 +12,9 @@ import dev.wycey.mido.pui.state.signals.effect as _effect
 
 public abstract class StatefulComponent
   @JvmOverloads
-  constructor(key: String? = null) : Component(key) {
+  constructor(
+    key: String? = null
+  ) : Component(key) {
     internal open inner class State {
       private val onBuildCallbacks = mutableListOf<() -> Unit>()
 
@@ -25,17 +27,18 @@ public abstract class StatefulComponent
       private val createdComputedSignals = mutableListOf<ComputedSignal<*>>()
 
       private var effectIndex = 0
-      private val createdEffects = mutableListOf<Function<*>>()
+      private val createdEffects = mutableListOf<Unsubscribe>()
 
       private var functionIndex = 0
-      private val createdFunctions = mutableListOf<Function<*>>()
+      private val createdFunctions = mutableListOf<() -> Any>()
 
-      var _element: StatefulElement? = null
-      var _component: Component? = null
+      var linkedElement: StatefulElement? = null
+      var component: Component? = null
+
       val context =
         RootSignalContext({
           if (!firstBuild) {
-            _element!!.markAsDirty()
+            linkedElement!!.markAsDirty()
           }
         })
 
@@ -57,22 +60,22 @@ public abstract class StatefulComponent
           } as ComputedSignal<T>
         }
 
-      fun effect(f: () -> Unit) =
+      fun effect(subscriber: () -> Unit) =
         if (firstBuild) {
-          _effect(f).also { createdEffects.add(f) }
+          _effect(subscriber).apply { createdEffects.add(this) }
         } else {
           createdEffects.getOrElse(effectIndex++) {
             throw IllegalStateException("Effect index out of bounds")
-          } as Unsubscribe
+          }
         }
 
       fun <T : Any> effect(subscriber: (previous: T?) -> T) =
         if (firstBuild) {
-          _effect(subscriber).also { createdEffects.add(subscriber) }
+          _effect(subscriber).apply { createdEffects.add(this) }
         } else {
           createdEffects.getOrElse(effectIndex++) {
             throw IllegalStateException("Effect index out of bounds")
-          } as Unsubscribe
+          }
         }
 
       fun <T : Any> createFunction(fn: () -> T) =

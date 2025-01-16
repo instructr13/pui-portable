@@ -9,7 +9,9 @@ import dev.wycey.mido.pui.renderer.delegations.RendererWithChild
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-internal class ViewRenderer(child: BoxRenderer? = null) : RendererWithChild<BoxRenderer>() {
+internal class ViewRenderer(
+  child: BoxRenderer? = null
+) : RendererWithChild<BoxRenderer>() {
   init {
     super.child = child
     that = this

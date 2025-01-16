@@ -9,8 +9,10 @@ import dev.wycey.mido.pui.renderer.RenderGlobalContext
 import dev.wycey.mido.pui.renderer.box.BoxRenderer
 import dev.wycey.mido.pui.renderer.view.ViewRenderer
 
-internal class ViewElement(view: ViewComponent.InnerViewComponent) : RendererElement<BoxRenderer>(view) {
-  private var _parentContext: RenderGlobalContext? = null
+internal class ViewElement(
+  view: ViewComponent.InnerViewComponent
+) : RendererElement<BoxRenderer>(view) {
+  private var parentContext: RenderGlobalContext? = null
   var child: Element? = null
   val context = RenderGlobalContext()
 
@@ -34,25 +36,25 @@ internal class ViewElement(view: ViewComponent.InnerViewComponent) : RendererEle
   }
 
   private fun detachView() {
-    val parentContext = _parentContext
+    val parentContext = parentContext
 
     if (parentContext != null) {
       RendererBridge.instance.removeRenderView(renderer)
 
       parentContext.dropChild(context)
 
-      _parentContext = null
+      this@ViewElement.parentContext = null
     }
   }
 
   override fun needBuild() {
     super.needBuild()
 
-    if (_parentContext == null) return
+    if (parentContext == null) return
 
     val newContext = RendererBridge.rootContext
 
-    if (newContext != _parentContext) {
+    if (newContext != parentContext) {
       detachView()
       attachView(newContext)
     }

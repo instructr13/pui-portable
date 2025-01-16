@@ -23,8 +23,11 @@ internal interface FrameEventBridgeContract {
   fun onPostDraw(callback: () -> Unit)
 }
 
-public class FrameEventBridge internal constructor() : FrameEventBridgeContract,
-  ProcessingFrameEventHandler, BridgeBase() {
+@Suppress("UsePropertyAccessSyntax")
+public class FrameEventBridge internal constructor() :
+  BridgeBase(),
+  FrameEventBridgeContract,
+  ProcessingFrameEventHandler {
     public companion object {
       @JvmField
       internal var instanceNullable: FrameEventBridge? = null
@@ -67,7 +70,7 @@ public class FrameEventBridge internal constructor() : FrameEventBridgeContract,
     }
 
     private fun invokePreDrawCallbacks() {
-      while (!preDrawCallbackQueue.isEmpty) {
+      while (!preDrawCallbackQueue.isEmpty()) {
         preDrawCallbackQueue.poll()()
       }
     }
@@ -77,7 +80,7 @@ public class FrameEventBridge internal constructor() : FrameEventBridgeContract,
     }
 
     private fun invokePostDrawCallbacks() {
-      while (!postDrawCallbackQueue.isEmpty) {
+      while (!postDrawCallbackQueue.isEmpty()) {
         postDrawCallbackQueue.poll()()
       }
     }

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "$group.fraiselait"
-version = "2.0.0"
+version = "2.1.0"
 
 val processingSerial = files("../../lib/org.processing-serial-4.3.jar")
 
