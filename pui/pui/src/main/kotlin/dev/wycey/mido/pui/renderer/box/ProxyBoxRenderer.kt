@@ -13,8 +13,8 @@ import dev.wycey.mido.pui.util.processing.AppletDrawer
 
 public abstract class ProxyBoxRenderer(
   private val rendererWithChild: RendererWithChild<BoxRenderer> = RendererWithChild()
-) :
-  BoxRenderer(), RendererWithChildContract<BoxRenderer> by rendererWithChild {
+) : BoxRenderer(),
+  RendererWithChildContract<BoxRenderer> by rendererWithChild {
   init {
     rendererWithChild.that = this
   }
@@ -25,9 +25,8 @@ public abstract class ProxyBoxRenderer(
     }
   }
 
-  override fun computeDryLayout(constraints: BoxConstraints): Size {
-    return child?.getDryLayout(constraints) ?: constraints.smallest
-  }
+  override fun computeDryLayout(constraints: BoxConstraints): Size =
+    child?.getDryLayout(constraints) ?: constraints.smallest
 
   override fun performLayout() {
     size = child?.apply { layout(getConstraints(), true) }?.size ?: getConstraints().smallest
