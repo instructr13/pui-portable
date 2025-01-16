@@ -2,10 +2,17 @@ package dev.wycey.mido.fraiselait.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 
-public data class Command(private var innerObject: CommandBuilder) {
+public data class Command(
+  private var innerObject: CommandBuilder
+) {
   public companion object {
     @JvmStatic
-    public val RESET: Command = CommandBuilder().changeColor(0, 0, 0).changeLedBuiltin(false).noTone().build()
+    public val RESET: Command =
+      CommandBuilder()
+        .changeColor(0, 0, 0)
+        .changeLedBuiltin(false)
+        .noTone()
+        .build()
   }
 
   internal val flags get() = innerObject.flags

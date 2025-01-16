@@ -35,8 +35,7 @@ public interface ContainerRendererContract<ChildType : RendererObject> {
 public class ContainerRendererImpl<
   ChildType : RendererObject,
   ParentDataType : ContainerRendererDataContract<ChildType>
-  > :
-  ContainerRendererContract<ChildType> {
+> : ContainerRendererContract<ChildType> {
   override val childCount: Int
     get() = _childCount
 

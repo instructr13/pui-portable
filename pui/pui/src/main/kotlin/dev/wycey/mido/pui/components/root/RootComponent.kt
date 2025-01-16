@@ -4,7 +4,9 @@ import dev.wycey.mido.pui.components.ComponentOwner
 import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.elements.root.RootElement
 
-public class RootComponent(public var child: Component? = null) : Component() {
+public class RootComponent(
+  public var child: Component? = null
+) : Component() {
   override fun createElement(): RootElement = RootElement(this)
 
   public fun attach(

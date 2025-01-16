@@ -14,8 +14,7 @@ public open class Align
     private val alignment: AlignmentFactor = Alignment.center,
     child: Component? = null,
     key: String? = null
-  ) :
-  SingleChildRendererComponent(key, child) {
+  ) : SingleChildRendererComponent(key, child) {
     override fun createRenderer(context: BuildContext): PositionedBoxRenderer = PositionedBoxRenderer(alignment)
 
     override fun updateRenderer(

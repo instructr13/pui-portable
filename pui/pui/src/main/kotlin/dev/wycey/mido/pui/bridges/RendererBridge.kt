@@ -14,11 +14,11 @@ public class RendererBridge internal constructor(
   private val mouseEventBridge: MouseEventBridge,
   private val frameEventBridge: FrameEventBridge,
   private val displayBridge: DisplayBridge
-) : RendererBridgeContract,
+) : BridgeBase(),
+  RendererBridgeContract,
   MouseEventBridgeContract by mouseEventBridge,
   FrameEventBridgeContract by frameEventBridge,
-  DisplayBridgeContract by displayBridge,
-  BridgeBase() {
+  DisplayBridgeContract by displayBridge {
   public companion object {
     @JvmField
     internal var instanceNullable: RendererBridge? = null

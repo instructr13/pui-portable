@@ -1,6 +1,9 @@
 package dev.wycey.mido.pui.layout
 
-public data class Size(val width: Float, val height: Float) {
+public data class Size(
+  val width: Float,
+  val height: Float
+) {
   public companion object {
     @JvmField
     public val ZERO: Size = Size(0f, 0f)

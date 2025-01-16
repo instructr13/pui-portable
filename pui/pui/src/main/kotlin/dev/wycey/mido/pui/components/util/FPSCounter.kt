@@ -14,8 +14,7 @@ public class FPSCounter
     private val prefix: String = "FPS: ",
     private val decimalRoundTo: Int = 1,
     key: String? = null
-  ) :
-  StatefulComponent(key) {
+  ) : StatefulComponent(key) {
     override fun build(context: BuildContext): Component {
       var fps by signal(0f)
 

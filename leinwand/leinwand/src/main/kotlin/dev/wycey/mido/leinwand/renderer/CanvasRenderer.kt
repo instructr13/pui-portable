@@ -8,7 +8,10 @@ import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 import processing.core.PGraphics
 
-internal class CanvasRenderer(initialSize: Size, private val instanceId: Int) : BoxRenderer() {
+internal class CanvasRenderer(
+  initialSize: Size,
+  private val instanceId: Int
+) : BoxRenderer() {
   init {
     size = initialSize
   }

@@ -4,7 +4,9 @@ import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 import java.util.*
 
-public open class RenderGlobalContext(scope: Scope? = null) {
+public open class RenderGlobalContext(
+  scope: Scope? = null
+) {
   public var nodesNeedingLayout: PriorityQueue<RendererObject> =
     PriorityQueue<RendererObject> { a, b -> a.depth - b.depth }
     private set

@@ -10,7 +10,9 @@ import dev.wycey.mido.pui.layout.EdgeInsets
 import dev.wycey.mido.pui.renderer.layout.ZStackFit
 import processing.core.PGraphics
 
-internal class ColorPalette(private val color: HSLuv) : StatelessComponent() {
+internal class ColorPalette(
+  private val color: HSLuv
+) : StatelessComponent() {
   private lateinit var alphaBarBaseGraphics: PGraphics
   private val alphaBoxSize = 4f
   private val alphaGreyBoxColor = 0xff808080.toInt()
@@ -51,7 +53,12 @@ internal class ColorPalette(private val color: HSLuv) : StatelessComponent() {
                   }
                 ),
                 Box(
-                  fill = color.toSRGB().toRGBInt().argb.toInt()
+                  fill =
+                    color
+                      .toSRGB()
+                      .toRGBInt()
+                      .argb
+                      .toInt()
                 )
               )
           )

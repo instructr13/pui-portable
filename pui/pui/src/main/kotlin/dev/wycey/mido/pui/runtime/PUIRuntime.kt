@@ -7,7 +7,9 @@ import dev.wycey.mido.pui.splash.SplashScreen
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 import processing.core.PApplet
 
-public class PUIRuntime(private val applet: PApplet) {
+public class PUIRuntime(
+  private val applet: PApplet
+) {
   @JvmOverloads
   public fun mount(
     app: Component,

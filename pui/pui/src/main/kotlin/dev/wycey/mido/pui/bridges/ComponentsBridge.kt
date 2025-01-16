@@ -21,11 +21,11 @@ public class ComponentsBridge internal constructor(
   private val mouseEventBridge: MouseEventBridge,
   private val frameEventBridge: FrameEventBridge,
   private val rendererBridge: RendererBridge
-) : ComponentsBridgeContract,
+) : BridgeBase(),
+  ComponentsBridgeContract,
   MouseEventBridgeContract by mouseEventBridge,
   FrameEventBridgeContract by frameEventBridge,
-  RendererBridgeContract by rendererBridge,
-  BridgeBase() {
+  RendererBridgeContract by rendererBridge {
   public companion object {
     @JvmField
     internal var instanceNullable: ComponentsBridge? = null

@@ -6,7 +6,6 @@ import dev.wycey.mido.pui.elements.rendering.MultiChildRendererElement
 public abstract class MultiChildRendererComponent(
   public val children: List<Component> = listOf(),
   key: String? = null
-) :
-  RendererComponent(key) {
+) : RendererComponent(key) {
   override fun createElement(): MultiChildRendererElement = MultiChildRendererElement(this)
 }

@@ -7,8 +7,7 @@ import dev.wycey.mido.pui.renderer.data.BoxRendererData
 public open class AlignedBoxRenderer(
   initialAlignment: AlignmentFactor? = Alignment.center,
   child: BoxRenderer? = null
-) :
-  ShiftedBoxRenderer(child) {
+) : ShiftedBoxRenderer(child) {
   public var alignment: AlignmentFactor? = initialAlignment
     set(value) {
       if (field == value) return

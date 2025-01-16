@@ -27,8 +27,11 @@ public abstract class AlignmentFactor {
     }
   }
 
-  private data class MixedAlignment(override val x: Float, override val start: Float, override val y: Float) :
-    AlignmentFactor() {
+  private data class MixedAlignment(
+    override val x: Float,
+    override val start: Float,
+    override val y: Float
+  ) : AlignmentFactor() {
     override fun unaryMinus() = MixedAlignment(-x, -start, -y)
 
     override fun plus(other: AlignmentFactor) = MixedAlignment(x + other.x, start + other.start, y + other.y)
@@ -79,7 +82,10 @@ public abstract class AlignmentFactor {
   internal abstract fun resolve(): Alignment
 }
 
-public class Alignment(override val x: Float, override val y: Float) : AlignmentFactor() {
+public class Alignment(
+  override val x: Float,
+  override val y: Float
+) : AlignmentFactor() {
   public companion object {
     @JvmStatic
     public fun lerp(
@@ -138,7 +144,10 @@ public class Alignment(override val x: Float, override val y: Float) : Alignment
   override fun resolve(): Alignment = this
 }
 
-public class AlignmentDirectional(override val start: Float, override val y: Float) : AlignmentFactor() {
+public class AlignmentDirectional(
+  override val start: Float,
+  override val y: Float
+) : AlignmentFactor() {
   public companion object {
     @JvmStatic
     public fun lerp(

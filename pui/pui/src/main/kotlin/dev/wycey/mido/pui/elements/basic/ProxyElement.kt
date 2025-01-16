@@ -3,7 +3,9 @@ package dev.wycey.mido.pui.elements.basic
 import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.basic.ProxyComponent
 
-public abstract class ProxyElement(component: ProxyComponent) : ComponentElement(component) {
+public abstract class ProxyElement(
+  component: ProxyComponent
+) : ComponentElement(component) {
   override fun build(): Component = (component as ProxyComponent).child
 
   override fun update(newComponent: Component) {

@@ -12,7 +12,10 @@ import dev.wycey.mido.pui.util.processing.TextAlign
 import dev.wycey.mido.pui.util.processing.VerticalTextAlign
 import processing.core.PApplet
 
-public class TextRenderer(initialContent: String, initialTextStyle: TextStyle) : BoxRenderer() {
+public class TextRenderer(
+  initialContent: String,
+  initialTextStyle: TextStyle
+) : BoxRenderer() {
   private var textAscent: Float = 0f
   private var textDescent: Float = 0f
 

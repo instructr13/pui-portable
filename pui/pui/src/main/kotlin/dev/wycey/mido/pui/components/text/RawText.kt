@@ -7,8 +7,11 @@ import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.box.BoxRenderer
 import dev.wycey.mido.pui.renderer.text.TextRenderer
 
-internal class RawText(private val content: String, private val textStyle: TextStyle, key: String? = null) :
-  RendererComponent(key) {
+internal class RawText(
+  private val content: String,
+  private val textStyle: TextStyle,
+  key: String? = null
+) : RendererComponent(key) {
   override fun createElement() = EmptyRendererElement<BoxRenderer>(this)
 
   override fun createRenderer(context: BuildContext) = TextRenderer(content, textStyle)

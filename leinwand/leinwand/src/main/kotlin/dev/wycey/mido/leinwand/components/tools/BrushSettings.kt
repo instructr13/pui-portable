@@ -8,7 +8,10 @@ import dev.wycey.mido.pui.components.layout.VirtualBox
 import dev.wycey.mido.pui.components.text.Text
 import dev.wycey.mido.pui.elements.base.BuildContext
 
-internal class BrushSettings(private val brush: Brush, key: String? = null) : StatelessComponent(key) {
+internal class BrushSettings(
+  private val brush: Brush,
+  key: String? = null
+) : StatelessComponent(key) {
   override fun build(context: BuildContext) =
     VStack(
       listOf(

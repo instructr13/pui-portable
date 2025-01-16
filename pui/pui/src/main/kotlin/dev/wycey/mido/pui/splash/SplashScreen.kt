@@ -4,7 +4,9 @@ import dev.wycey.mido.pui.layout.Point
 import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-public class SplashScreen(private val windowSize: Size) {
+public class SplashScreen(
+  private val windowSize: Size
+) {
   public fun draw(d: AppletDrawer) {
     d.applet.background(255)
 

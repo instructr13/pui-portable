@@ -20,8 +20,7 @@ public class Ellipse
     private val strokeJoin: StrokeJoins? = null,
     private val mode: RenderMode = RenderMode.Corner,
     key: String? = null
-  ) :
-  SingleChildRendererComponent(key, child) {
+  ) : SingleChildRendererComponent(key, child) {
     override fun createRenderer(context: BuildContext): EllipseRenderer =
       EllipseRenderer(
         fill = fill,

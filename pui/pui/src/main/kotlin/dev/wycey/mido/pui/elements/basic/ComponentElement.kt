@@ -3,7 +3,9 @@ package dev.wycey.mido.pui.elements.basic
 import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.elements.base.Element
 
-public abstract class ComponentElement(component: Component) : Element(component) {
+public abstract class ComponentElement(
+  component: Component
+) : Element(component) {
   public var child: Element? = null
     private set
 

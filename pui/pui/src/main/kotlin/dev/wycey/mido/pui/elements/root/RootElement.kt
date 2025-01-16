@@ -5,7 +5,9 @@ import dev.wycey.mido.pui.components.base.Component
 import dev.wycey.mido.pui.components.root.RootComponent
 import dev.wycey.mido.pui.elements.base.Element
 
-public class RootElement(component: RootComponent) : Element(component) {
+public class RootElement(
+  component: RootComponent
+) : Element(component) {
   private var child: Element? = null
   internal var newComponent: Component? = null
 

@@ -9,7 +9,9 @@ import dev.wycey.mido.pui.renderer.box.ProxyBoxRenderer
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-public class GestureEventRenderer(public var eventHandler: (e: GestureEventArgs) -> Unit) : ProxyBoxRenderer() {
+public class GestureEventRenderer(
+  public var eventHandler: (e: GestureEventArgs) -> Unit
+) : ProxyBoxRenderer() {
   private var predicate: MouseGesturePredicate? = null
   private var position: Point? = null
   private var neededLayout = false

@@ -8,7 +8,10 @@ import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.box.BoxRenderer
 
-internal class RawCanvas(private val size: Size, private val instanceId: Int) : RendererComponent() {
+internal class RawCanvas(
+  private val size: Size,
+  private val instanceId: Int
+) : RendererComponent() {
   override fun createElement() = EmptyRendererElement<BoxRenderer>(this)
 
   override fun createRenderer(context: BuildContext) = CanvasRenderer(size, instanceId)

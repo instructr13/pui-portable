@@ -17,8 +17,9 @@ internal interface RendererWithChildContract<ChildType : RendererObject> {
   fun visitChildren(visitor: RendererVisitor)
 }
 
-public open class RendererWithChild<ChildType : RendererObject> : RendererWithChildContract<ChildType>,
-  RendererObject() {
+public open class RendererWithChild<ChildType : RendererObject> :
+  RendererObject(),
+  RendererWithChildContract<ChildType> {
   internal lateinit var that: RendererObject
 
   private val safeThat: RendererObject?

@@ -4,9 +4,9 @@ internal interface DisplayBridgeContract
 
 public class DisplayBridge internal constructor(
   private val eventHandlingBridge: EventHandlingBridge
-) : DisplayBridgeContract,
-  EventHandlingBridgeContract by eventHandlingBridge,
-  BridgeBase() {
+) : BridgeBase(),
+  DisplayBridgeContract,
+  EventHandlingBridgeContract by eventHandlingBridge {
   public companion object {
     @JvmField
     internal var instanceNullable: DisplayBridge? = null

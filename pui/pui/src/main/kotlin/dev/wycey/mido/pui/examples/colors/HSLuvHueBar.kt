@@ -19,9 +19,7 @@ internal class HSLuvHueBar(
   private val size: Size,
   key: String? = null
 ) : StatefulComponent(key) {
-  private fun hueToY(hue: Float): Float {
-    return size.height - hue / 360f * size.height
-  }
+  private fun hueToY(hue: Float): Float = size.height - hue / 360f * size.height
 
   private fun onSelect(
     e: GestureEventArgs,

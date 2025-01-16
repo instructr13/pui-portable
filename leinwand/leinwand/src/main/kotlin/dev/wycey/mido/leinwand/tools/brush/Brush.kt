@@ -5,7 +5,9 @@ import dev.wycey.mido.pui.layout.Point
 import processing.core.PApplet
 import processing.core.PImage
 
-internal abstract class Brush(protected val handle: dev.wycey.mido.leinwand.LeinwandHandle) : Tool {
+internal abstract class Brush(
+  protected val handle: dev.wycey.mido.leinwand.LeinwandHandle
+) : Tool {
   internal val currentLayer get() = handle.layers[handle.activeLayerIndex]
 
   abstract var startingSize: Int

@@ -10,8 +10,7 @@ import dev.wycey.mido.pui.util.processing.AppletDrawer
 public class OffStageRenderer(
   initialOffstage: Boolean = true,
   child: BoxRenderer? = null
-) :
-  ProxyBoxRenderer() {
+) : ProxyBoxRenderer() {
   init {
     super.child = child
   }

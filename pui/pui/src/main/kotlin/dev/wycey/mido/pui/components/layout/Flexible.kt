@@ -11,8 +11,7 @@ public open class Flexible
     private val flex: Int = 1,
     private val fit: dev.wycey.mido.pui.renderer.layout.StackFit = dev.wycey.mido.pui.renderer.layout.StackFit.Loose,
     key: String? = null
-  ) :
-  ParentRendererDataComponent<dev.wycey.mido.pui.renderer.layout.StackParentRendererData>(child, key) {
+  ) : ParentRendererDataComponent<dev.wycey.mido.pui.renderer.layout.StackParentRendererData>(child, key) {
     override fun applyParentRendererData(renderer: RendererObject) {
       val data = renderer.parentRendererData!! as dev.wycey.mido.pui.renderer.layout.StackParentRendererData
       var needsLayout = false

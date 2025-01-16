@@ -2,7 +2,10 @@ package dev.wycey.mido.pui.layout
 
 import kotlin.math.sqrt
 
-public data class Point(val x: Float, val y: Float) {
+public data class Point(
+  val x: Float,
+  val y: Float
+) {
   public companion object {
     @JvmField
     public val ZERO: Point = Point(0f, 0f)

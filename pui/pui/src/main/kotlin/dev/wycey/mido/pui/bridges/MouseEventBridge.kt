@@ -12,8 +12,9 @@ internal interface MouseEventBridgeContract {
   fun handleMouseWheel(e: MouseEventArgs)
 }
 
-public class MouseEventBridge internal constructor() : MouseEventBridgeContract,
-  BridgeBaseWithAutoInit() {
+public class MouseEventBridge internal constructor() :
+  BridgeBaseWithAutoInit(),
+  MouseEventBridgeContract {
     public companion object {
       @JvmField
       internal var instanceNullable: MouseEventBridge? = null

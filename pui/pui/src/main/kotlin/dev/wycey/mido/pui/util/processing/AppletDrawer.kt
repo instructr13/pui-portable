@@ -6,7 +6,9 @@ import dev.wycey.mido.pui.renderer.BorderRadius
 import processing.core.PApplet
 import processing.core.PGraphics
 
-public class AppletDrawer(public val applet: PApplet) {
+public class AppletDrawer(
+  public val applet: PApplet
+) {
   private inner class AppletWith {
     private val endTasks = mutableListOf<() -> Unit>()
 

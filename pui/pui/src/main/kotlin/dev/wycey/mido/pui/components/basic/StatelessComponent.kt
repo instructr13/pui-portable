@@ -6,7 +6,9 @@ import dev.wycey.mido.pui.elements.basic.StatelessElement
 
 public abstract class StatelessComponent
   @JvmOverloads
-  constructor(key: String? = null) : Component(key) {
+  constructor(
+    key: String? = null
+  ) : Component(key) {
     public abstract fun build(context: BuildContext): Component
 
     override fun createElement() = StatelessElement(this)

@@ -26,8 +26,7 @@ public class Box
     private val mode: RenderMode? = null,
     key: String? = null,
     private val additionalPaint: ((d: AppletDrawer, currentScope: Scope, size: Size) -> Unit)? = null
-  ) :
-  SingleChildRendererComponent(key, child) {
+  ) : SingleChildRendererComponent(key, child) {
     override fun createRenderer(context: BuildContext): ComponentBoxRenderer =
       ComponentBoxRenderer(
         fill = fill,

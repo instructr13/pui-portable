@@ -11,8 +11,7 @@ public sealed class SubscriptionType {
     val depth: Int = 0,
     val updates: MutableList<() -> Unit> = mutableListOf(),
     val effects: MutableSet<Subscriber> = mutableSetOf()
-  ) :
-    SubscriptionType()
+  ) : SubscriptionType()
 
   public data object Untracked : SubscriptionType()
 }

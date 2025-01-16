@@ -13,8 +13,7 @@ public class Padding
     private val padding: EdgeInsets,
     child: Component? = null,
     key: String? = null
-  ) :
-  SingleChildRendererComponent(key, child) {
+  ) : SingleChildRendererComponent(key, child) {
     override fun createRenderer(context: BuildContext): PaddingRenderer = PaddingRenderer(padding)
 
     override fun updateRenderer(

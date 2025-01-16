@@ -6,8 +6,9 @@ import dev.wycey.mido.pui.elements.base.Element
 import dev.wycey.mido.pui.elements.basic.ProxyElement
 import dev.wycey.mido.pui.renderer.data.ParentRendererData
 
-public class ParentRendererDataElement<T : ParentRendererData>(component: ParentRendererDataComponent<T>) :
-  ProxyElement(component) {
+public class ParentRendererDataElement<T : ParentRendererData>(
+  component: ParentRendererDataComponent<T>
+) : ProxyElement(component) {
   private fun applyParentRendererData(component: ParentRendererDataComponent<T>) {
     fun applyParentRendererDataToChild(child: Element) {
       if (child is RendererElement<*>) {

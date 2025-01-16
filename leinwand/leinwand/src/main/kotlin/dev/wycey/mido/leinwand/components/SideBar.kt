@@ -16,8 +16,7 @@ internal class SideBar(
   private val instanceId: Int,
   private val initialSize: Size = Size(300f, 702f),
   private val onChangeColor: (color: HSLuv) -> Unit
-) :
-  StatelessComponent("sideBar$instanceId") {
+) : StatelessComponent("sideBar$instanceId") {
   override fun build(context: BuildContext) =
     VirtualBox(
       width = initialSize.width,

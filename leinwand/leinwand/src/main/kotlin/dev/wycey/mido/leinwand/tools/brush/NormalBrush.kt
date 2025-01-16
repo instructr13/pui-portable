@@ -9,7 +9,10 @@ import dev.wycey.mido.pui.state.signals.untracked
 import processing.core.PApplet
 import processing.core.PImage
 
-internal class NormalBrush(handle: dev.wycey.mido.leinwand.LeinwandHandle) : Brush(handle), Draggable {
+internal class NormalBrush(
+  handle: dev.wycey.mido.leinwand.LeinwandHandle
+) : Brush(handle),
+  Draggable {
   override val name: String
     get() = "Brush"
 
@@ -59,7 +62,13 @@ internal class NormalBrush(handle: dev.wycey.mido.leinwand.LeinwandHandle) : Bru
     }
 
     g.beginDraw()
-    g.stroke(untracked { handle.foregroundColor }.toSRGB().toRGBInt().argb.toInt())
+    g.stroke(
+      untracked { handle.foregroundColor }
+        .toSRGB()
+        .toRGBInt()
+        .argb
+        .toInt()
+    )
     g.strokeWeight(size.toFloat())
     g.line(e.delta.first, e.delta.second, prevX, prevY)
     g.endDraw()

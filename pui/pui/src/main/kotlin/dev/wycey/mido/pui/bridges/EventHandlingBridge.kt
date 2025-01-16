@@ -21,11 +21,11 @@ internal interface EventHandlingBridgeContract {
 public class EventHandlingBridge internal constructor(
   private val mouseEventBridge: MouseEventBridge,
   private val frameEventBridge: FrameEventBridge
-) : EventHandlingBridgeContract,
+) : BridgeBase(),
+  EventHandlingBridgeContract,
   MouseEventBridgeContract by mouseEventBridge,
   FrameEventBridgeContract by frameEventBridge,
-  ProcessingEventHandler,
-  BridgeBase() {
+  ProcessingEventHandler {
   public companion object {
     @JvmField
     internal var instanceNullable: EventHandlingBridge? = null

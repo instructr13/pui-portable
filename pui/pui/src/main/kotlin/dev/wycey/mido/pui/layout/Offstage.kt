@@ -10,8 +10,7 @@ public class Offstage(
   child: Component? = null,
   private val offstage: Boolean = true,
   key: String? = null
-) :
-  SingleChildRendererComponent(key, child) {
+) : SingleChildRendererComponent(key, child) {
   override fun createRenderer(context: BuildContext): OffStageRenderer = OffStageRenderer(offstage)
 
   override fun updateRenderer(

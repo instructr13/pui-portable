@@ -8,7 +8,10 @@ import dev.wycey.mido.pui.renderer.box.BoxRenderer
 import dev.wycey.mido.pui.renderer.box.ShiftedBoxRenderer
 import dev.wycey.mido.pui.renderer.data.BoxRendererData
 
-public class PaddingRenderer(preferredPadding: EdgeInsets, child: BoxRenderer? = null) : ShiftedBoxRenderer(child) {
+public class PaddingRenderer(
+  preferredPadding: EdgeInsets,
+  child: BoxRenderer? = null
+) : ShiftedBoxRenderer(child) {
   public var padding: EdgeInsets = preferredPadding
     set(value) {
       field = value

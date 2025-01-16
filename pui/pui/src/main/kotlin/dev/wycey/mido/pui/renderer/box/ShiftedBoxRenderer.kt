@@ -4,7 +4,9 @@ import dev.wycey.mido.pui.renderer.data.BoxRendererData
 import dev.wycey.mido.pui.util.Scope
 import dev.wycey.mido.pui.util.processing.AppletDrawer
 
-public open class ShiftedBoxRenderer(child: BoxRenderer? = null) : ProxyBoxRenderer() {
+public open class ShiftedBoxRenderer(
+  child: BoxRenderer? = null
+) : ProxyBoxRenderer() {
   init {
     super.child = child
   }

@@ -6,8 +6,9 @@ import dev.wycey.mido.pui.elements.base.Element
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.delegations.RendererWithChildContract
 
-public class SingleChildRendererElement(component: SingleChildRendererComponent) :
-  RendererElement<RendererObject>(component) {
+public class SingleChildRendererElement(
+  component: SingleChildRendererComponent
+) : RendererElement<RendererObject>(component) {
   private var child: Element? = null
 
   override fun visitChildren(visitor: (element: Element) -> Unit) {
@@ -44,9 +45,7 @@ public class SingleChildRendererElement(component: SingleChildRendererComponent)
     child: RendererObject,
     oldSlot: Any?,
     newSlot: Any?
-  ) {
-    throw Exception("Cannot move child of SingleChildRendererComponent")
-  }
+  ): Unit = throw Exception("Cannot move child of SingleChildRendererComponent")
 
   override fun removeRendererChild(
     child: RendererObject,

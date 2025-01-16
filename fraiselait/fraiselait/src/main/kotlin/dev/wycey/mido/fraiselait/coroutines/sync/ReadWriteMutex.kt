@@ -42,7 +42,10 @@ internal enum class MutexState {
   UNLOCKED
 }
 
-internal data class MutexInfo(val mode: MutexMode, val state: MutexState)
+internal data class MutexInfo(
+  val mode: MutexMode,
+  val state: MutexState
+)
 
 /**
  * A variation on [Mutex] that supports read and write operations.
@@ -68,9 +71,8 @@ internal interface ReadWriteMutex {
  * Construct a new [ReadWriteMutex].  The [block] can be used to provide additional
  * configuration options to the mutex.
  */
-internal fun ReadWriteMutex(block: ReadWriteMutexBuilder.() -> Unit = {}): ReadWriteMutex {
-  return ReadWriteMutexBuilder().apply(block).build()
-}
+internal fun ReadWriteMutex(block: ReadWriteMutexBuilder.() -> Unit = {}): ReadWriteMutex =
+  ReadWriteMutexBuilder().apply(block).build()
 
 internal class ReadWriteMutexBuilder internal constructor() {
   private var onStateChange: (suspend (MutexInfo) -> Unit)? = null
@@ -109,8 +111,8 @@ private class ReadWriteMutexImpl(
    */
   private val stateLock = Mutex()
 
-  override suspend fun <T> withReadLock(block: suspend () -> T): T {
-    return try {
+  override suspend fun <T> withReadLock(block: suspend () -> T): T =
+    try {
       // Ensure new readers are allowed
       allowNewReads.withLock {
         stateLock.withLock {
@@ -142,7 +144,6 @@ private class ReadWriteMutexImpl(
         }
       }
     }
-  }
 
   override suspend fun <T> withWriteLock(fn: suspend () -> T): T {
     // Prevent readers from starting any new action

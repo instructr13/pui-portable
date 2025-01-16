@@ -7,8 +7,12 @@ import processing.core.PGraphics
 import processing.core.PImage
 import java.util.*
 
-internal open class Layer(applet: PApplet, var name: String, val handle: LeinwandHandle) :
-  LayerContract, Drawable {
+internal open class Layer(
+  applet: PApplet,
+  var name: String,
+  val handle: LeinwandHandle
+) : LayerContract,
+  Drawable {
   val id: String = UUID.randomUUID().toString()
   var hidden = false
   var lock = false

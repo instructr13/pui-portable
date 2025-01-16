@@ -15,8 +15,7 @@ public class VirtualBox
     width: Float? = null,
     height: Float? = null,
     key: String? = null
-  ) :
-  SingleChildRendererComponent(key, child) {
+  ) : SingleChildRendererComponent(key, child) {
     public companion object {
       @JvmStatic
       @JvmOverloads

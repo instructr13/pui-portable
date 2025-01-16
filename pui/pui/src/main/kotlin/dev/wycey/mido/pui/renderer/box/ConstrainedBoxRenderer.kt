@@ -3,7 +3,9 @@ package dev.wycey.mido.pui.renderer.box
 import dev.wycey.mido.pui.layout.Size
 import dev.wycey.mido.pui.layout.constraints.BoxConstraints
 
-public class ConstrainedBoxRenderer(initialAdditionalConstraints: BoxConstraints) : ProxyBoxRenderer() {
+public class ConstrainedBoxRenderer(
+  initialAdditionalConstraints: BoxConstraints
+) : ProxyBoxRenderer() {
   public var additionalConstraints: BoxConstraints = initialAdditionalConstraints
     set(value) {
       if (field == value) return

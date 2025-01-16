@@ -11,7 +11,10 @@ import processing.core.PGraphics
 import processing.core.PImage
 import kotlin.math.sqrt
 
-internal class Marker(handle: dev.wycey.mido.leinwand.LeinwandHandle) : Brush(handle), Draggable {
+internal class Marker(
+  handle: dev.wycey.mido.leinwand.LeinwandHandle
+) : Brush(handle),
+  Draggable {
   override val name: String
     get() = "Marker"
 
@@ -90,7 +93,12 @@ internal class Marker(handle: dev.wycey.mido.leinwand.LeinwandHandle) : Brush(ha
 
     g.beginDraw()
 
-    val color = untracked { handle.foregroundColor }.toSRGB().toRGBInt().argb.toInt()
+    val color =
+      untracked { handle.foregroundColor }
+        .toSRGB()
+        .toRGBInt()
+        .argb
+        .toInt()
 
     val image =
       brushImageColorMap.getOrPut(color) {

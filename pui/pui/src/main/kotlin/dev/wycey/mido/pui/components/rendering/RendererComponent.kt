@@ -5,7 +5,9 @@ import dev.wycey.mido.pui.elements.base.BuildContext
 import dev.wycey.mido.pui.elements.rendering.RendererElement
 import dev.wycey.mido.pui.renderer.RendererObject
 
-public abstract class RendererComponent(key: String? = null) : Component(key) {
+public abstract class RendererComponent(
+  key: String? = null
+) : Component(key) {
   public abstract override fun createElement(): RendererElement<*>
 
   public abstract fun createRenderer(context: BuildContext): RendererObject

@@ -8,8 +8,9 @@ import dev.wycey.mido.pui.elements.base.NullElement
 import dev.wycey.mido.pui.renderer.RendererObject
 import dev.wycey.mido.pui.renderer.delegations.ContainerRendererContract
 
-public open class MultiChildRendererElement(component: MultiChildRendererComponent) :
-  RendererElement<RendererObject>(component) {
+public open class MultiChildRendererElement(
+  component: MultiChildRendererComponent
+) : RendererElement<RendererObject>(component) {
   internal val rendererContract
     get() = renderer as ContainerRendererContract<RendererObject>
 
@@ -53,7 +54,8 @@ public open class MultiChildRendererElement(component: MultiChildRendererCompone
     val multiChildRendererComponent = component as MultiChildRendererComponent
 
     val children: MutableList<Element> =
-      arrayOfNulls<Element>(multiChildRendererComponent.children.size).map { NullElement }
+      arrayOfNulls<Element>(multiChildRendererComponent.children.size)
+        .map { NullElement }
         .toMutableList()
 
     var previousChild: Element? = null

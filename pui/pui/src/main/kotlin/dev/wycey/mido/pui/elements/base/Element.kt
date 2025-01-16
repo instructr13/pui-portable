@@ -15,7 +15,10 @@ internal object NullWidget : Component() {
 
 internal object NullElement : Element(NullWidget)
 
-public abstract class Element(private var _component: Component?) : BuildContext, Comparable<Element> {
+public abstract class Element(
+  private var _component: Component?
+) : BuildContext,
+  Comparable<Element> {
   override var component: Component
     get() = _component!!
     set(value) {

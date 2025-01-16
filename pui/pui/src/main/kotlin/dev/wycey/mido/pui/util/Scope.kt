@@ -5,7 +5,10 @@ import processing.core.PApplet
 
 internal typealias ScopeConsumer = (Scope) -> Unit
 
-public data class Scope(val applet: PApplet, val parent: Scope?) {
+public data class Scope(
+  val applet: PApplet,
+  val parent: Scope?
+) {
   public var absolutePosition: Point = Point.ZERO
     private set
   public var relativePosition: Point = Point.ZERO

@@ -21,7 +21,8 @@ public class DrawingInstance
     init {
       DrawingRoot.applet = applet
       dev.wycey.mido.leinwand.LeinwandHandle.instances.computeIfAbsent(instanceId) {
-        dev.wycey.mido.leinwand.LeinwandHandle(applet)
+        dev.wycey.mido.leinwand
+          .LeinwandHandle(applet)
       }
     }
 
