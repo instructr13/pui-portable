@@ -9,11 +9,14 @@ plugins {
 
 // Issue: https://github.com/GradleUp/shadow/issues/448
 tasks.withType<ShadowJar> {
-  configurations = listOf(
-    project.configurations.implementation.get(),
-  ).onEach { it.isCanBeResolved = true }
+  configurations =
+    listOf(
+      project.configurations.implementation.get()
+    ).onEach { it.isCanBeResolved = true }
 }
 
 tasks.assemble {
-  finalizedBy("shadowJar")
+  if (plugins.findPlugin("application") == null) {
+    finalizedBy("shadowJar")
+  }
 }
