@@ -1,7 +1,7 @@
 [versions]
 
 # Kotlin libraries
-kotlin = "2.1.0"
+kotlin = "2.1.10"
 kotlinx-coroutines = "1.10.+"
 
 # ktlint-gradle
@@ -15,12 +15,6 @@ processing = "4.3.2"
 
 # colormath
 colormath = "3.6.+"
-
-# jackson
-jackson = "2.18.+"
-
-# msgpack-java
-msgpack-java = "0.9.+"
 
 # jssc
 jssc = "2.9.+"
@@ -45,13 +39,6 @@ processing-core = { module = "org.processing:core", version.ref = "processing" }
 # colormath
 colormath = { module = "com.github.ajalt.colormath:colormath", version.ref = "colormath" }
 
-# jackson
-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
-jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
-jackson-dataformat-msgpack = { module = "org.msgpack:jackson-dataformat-msgpack", version.ref = "msgpack-java" }
-
 # jssc
 jssc = { module = "io.github.java-native:jssc", version.ref = "jssc" }
 
@@ -62,12 +49,3 @@ uibooster = { module = "com.github.Milchreis:UiBooster", version.ref = "uibooste
 
 # processing
 processing-serial = ["jssc"]
-
-# jackson
-jackson = [
-  "jackson-core",
-  "jackson-annotations",
-  "jackson-databind",
-  "jackson-module-kotlin",
-  "jackson-dataformat-msgpack"
-]

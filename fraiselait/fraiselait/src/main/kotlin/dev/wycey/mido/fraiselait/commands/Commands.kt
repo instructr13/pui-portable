@@ -1,23 +1,50 @@
 package dev.wycey.mido.fraiselait.commands
 
 internal sealed class Commands {
-  internal class ChangeColor(
-    rawR: Int,
-    rawG: Int,
-    rawB: Int
+  internal data class ChangeColor(
+    val r: UByte,
+    val g: UByte,
+    val b: UByte
   ) : Commands() {
-    val r: UByte = rawR.toUByte()
-    val g: UByte = rawG.toUByte()
-    val b: UByte = rawB.toUByte()
+    internal constructor(
+      rawR: Int,
+      rawG: Int,
+      rawB: Int
+    ) : this(
+      rawR.toUByte(),
+      rawG.toUByte(),
+      rawB.toUByte()
+    )
+
+    internal fun toDataBytes(): ByteArray = byteArrayOf(r.toByte(), g.toByte(), b.toByte())
   }
 
-  internal class Tone
+  internal data class Tone
     @JvmOverloads
     constructor(
-      rawFrequency: Int,
-      rawDuration: Long? = null
+      val frequency: UShort,
+      val duration: UInt? = null
     ) : Commands() {
-      val frequency: UShort = rawFrequency.toUShort()
-      val duration: UInt? = rawDuration?.toUInt()
+      internal constructor(
+        rawFrequency: Int,
+        rawDuration: Long? = null
+      ) : this(
+        rawFrequency.toUShort(),
+        rawDuration?.toUInt()
+      )
+
+      internal fun toDataBytes(): ByteArray {
+        val frequency = frequency.toULong()
+        val duration = duration ?: 0u
+
+        return byteArrayOf(
+          (frequency shr 8).toByte(),
+          frequency.toByte(),
+          (duration shr 24).toByte(),
+          (duration shr 16).toByte(),
+          (duration shr 8).toByte(),
+          duration.toByte()
+        )
+      }
     }
 }

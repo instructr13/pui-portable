@@ -1,67 +1,47 @@
-/*
- * Open Source Licenses:
- * ArduinoJson: MIT License, (c) 2014-2024 Benoît Blanchon.
- */
-
 /* LIBRARIES */
 
+#include <array>
 #include <optional>
 
-#include <ArduinoJson.h>
+#include "hardware/flash.h"
 
 using namespace std;
 
-constexpr uint16_t PROTOCOL_VERSION = 200;
+///bool core1_separate_stack = true;
+
+constexpr uint16_t PROTOCOL_VERSION = 300;
 constexpr uint32_t ACK_TIMEOUT_MS = 5000;
 
 /* COMMANDS */
 
-constexpr uint32_t MAGIC_COMMAND_NEGOTIATE = 0xCAFEFACE;
-constexpr uint32_t MAGIC_COMMAND_DISCONNECT = 0xCAFEDEAD;
+constexpr uint8_t COMMAND_DATA_GET_IMMEDIATE = 0x90;
+constexpr uint8_t COMMAND_DATA_GET_LOOP_OFF = 0x92;
+constexpr uint8_t COMMAND_DATA_GET_LOOP_ON = 0x93;
+
+constexpr uint8_t COMMAND_DATA_SET = 0xe0;
+
+constexpr uint8_t COMMAND_DEVICE_INFO_GET = 0xf0;
+
+/* RESPONSE */
+
+constexpr uint8_t RESPONSE_DATA_START = 0x9f;
+constexpr uint8_t RESPONSE_RESERVED_ERROR = 0xfe;
+
+/* FIFO COMMANDS */
+
+constexpr uint32_t FIFO_REFRESH_PINS = 0xcafe000d;
+constexpr uint32_t FIFO_NO_TONE = 0xcafe0000;
+constexpr uint32_t FIFO_TONE = 0xcafe000a;
+constexpr uint32_t FIFO_RGB_LED = 0xcafe000b;
+constexpr uint32_t FIFO_LED_BUILTIN = 0xcafe000c;
 
 /* SENSORS */
 
 constexpr size_t ANALOG_READINGS = 24;
 
-/* SERIALIZE */
+constexpr uint32_t CUSTOM_DEVICE_ID = 0;
 
-size_t serialize(const JsonDocument &doc);
-
-class Error {
-public:
-  Error(const uint8_t code, const String message) : code(code), message(std::move(message)) {}
-
-  void send() const {
-    JsonDocument doc;
-
-    doc["code"] = code;
-    doc["message"] = message;
-
-    Serial.print(F("E"));
-    serialize(doc);
-    Serial.println();
-  }
-
-private:
-  uint8_t code;
-  String message;
-};
-
-enum class TransferMode {
-  JSON, // For debugging, code is 'J', default
-  MSGPACK, // For real communication, code is 'M'
-};
-
-/* DESERIALIZE */
-
-bool deserialize(const JsonDocument &doc);
-
-class PinInformation {
-public:
-  PinInformation() {}
-  PinInformation(const uint8_t speaker, const uint8_t tact_switch, const uint8_t led_green, const uint8_t led_blue, const uint8_t led_red, const uint8_t light_sensor)
-    : speaker(speaker), tact_switch(tact_switch), led_green(led_green), led_blue(led_blue), led_red(led_red), light_sensor(light_sensor) {}
-
+struct PinInformation {
   // Default pins
   uint8_t speaker = 16;
   uint8_t tact_switch = 18;
@@ -71,36 +51,52 @@ public:
   uint8_t light_sensor = 26;
 };
 
-// Bitflags
-typedef union {
-  unsigned long all;
-  struct {
-    unsigned short change_color:1;
-    unsigned short change_led_builtin:1;
-    unsigned short tone:1;
-    unsigned short no_tone:1;
-    unsigned short change_pin:1;
-    unsigned short restore_default_pins:1;
-  };
-} Commands;
+struct OptionalPinInformation {
+  optional<uint8_t> speaker;
+  optional<uint8_t> tact_switch;
+  optional<uint8_t> led_green;
+  optional<uint8_t> led_blue;
+  optional<uint8_t> led_red;
+  optional<uint8_t> light_sensor;
 
-class ChangeColor {
-public:
-  ChangeColor() {}
-  ChangeColor(const uint8_t r, const uint8_t g, const uint8_t b) : r(r), g(g), b(b) {}
+  PinInformation merge(const PinInformation &pins) const {
+    return {
+      speaker.value_or(pins.speaker),
+      tact_switch.value_or(pins.tact_switch),
+      led_green.value_or(pins.led_green),
+      led_blue.value_or(pins.led_blue),
+      led_red.value_or(pins.led_red),
+      light_sensor.value_or(pins.light_sensor)
+    };
+  }
+};
 
+struct Tone {
+  uint16_t frequency;
+  optional<uint32_t> duration;
+
+  Tone() {}
+  Tone(const uint16_t frequency, const optional<uint32_t> duration = nullopt) : frequency(frequency), duration(duration) {}
+};
+
+struct RGBColor {
   uint8_t r;
   uint8_t g;
   uint8_t b;
 };
 
-class Tone {
-public:
-  Tone() {}
-  Tone(const uint16_t frequency, const optional<uint32_t> duration = nullopt) : frequency(frequency), duration(duration) {}
+struct DeserializationError {
+  void send() const {
+    Serial.write(RESPONSE_RESERVED_ERROR);
+    Serial.write(0x01);
+  }
+};
 
-  uint16_t frequency;
-  optional<uint32_t> duration;
+struct PinCollisionError {
+  void send() const {
+    Serial.write(RESPONSE_RESERVED_ERROR);
+    Serial.write(0x02);
+  }
 };
 
 #pragma region XXH32 Implementation
@@ -252,247 +248,51 @@ uint32_t XXH32(void const *const input, size_t const length, uint32_t const seed
 
 #pragma endregion /* XXH32 Implementation */
 
-char* get_device_id() {
-  static char id[10];
-  static bool output_hash_got = false;
-
-  if (!output_hash_got) {
-    pico_unique_board_id_t raw_id;
-
-    pico_get_unique_board_id(&raw_id);
-
-    const auto hash = XXH32(raw_id.id, PICO_UNIQUE_BOARD_ID_SIZE_BYTES, 0);
-
-    sprintf(id, "D%09x", hash);
-
-    output_hash_got = true;
-  }
-
-  return id;
-}
-
-bool negotiated = false;
-
-PinInformation pins;
-
-TransferMode transfer_mode = TransferMode::JSON;
-
-size_t serialize(const JsonDocument &doc) {
-  size_t size;
-
-  switch (transfer_mode) {
-    case TransferMode::JSON:
-    size = serializeJson(doc, Serial);
-
-    break;
-
-    case TransferMode::MSGPACK:
-    size = serializeMsgPack(doc, Serial);
-
-    break;
-  }
-
-  return size;
-}
-
-bool deserialize(JsonDocument &doc) {
-  DeserializationError error;
-
-  switch (transfer_mode) {
-    case TransferMode::JSON:
-    error = deserializeJson(doc, Serial);
-
-    break;
-
-    case TransferMode::MSGPACK:
-    error = deserializeMsgPack(doc, Serial);
-
-    break;
-  }
-
-  if (error) {
-    String message = F("Deserialization failed: ");
-
-    message.concat(error.f_str());
-
-    Error e { 1, message };
-
-    e.send();
-
-    return false;
-  }
-
-  return true;
-}
-
-void refresh_pins() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(pins.speaker, OUTPUT);
-  pinMode(pins.tact_switch, INPUT_PULLUP);
-  pinMode(pins.led_green, OUTPUT);
-  pinMode(pins.led_blue, OUTPUT);
-  pinMode(pins.led_red, OUTPUT);
-  pinMode(pins.light_sensor, INPUT);
-}
-
-int light_strength_average = 0;
-int light_strength_readings[ANALOG_READINGS];
-float core_temp_average = 0;
-float core_temp_readings[ANALOG_READINGS];
-
-void smooth_analog_values() {
-  static int light_strength_read_index = 0;
-  static int light_strength_total = 0;
-
-  light_strength_total -= light_strength_readings[light_strength_read_index];
-  light_strength_readings[light_strength_read_index] = analogRead(pins.light_sensor);
-  light_strength_total += light_strength_readings[light_strength_read_index];
-  light_strength_read_index++;
-
-  if (light_strength_read_index >= ANALOG_READINGS) {
-    light_strength_read_index = 0;
-  }
-
-  light_strength_average = light_strength_total / ANALOG_READINGS;
-
-  static int core_temp_read_index = 0;
-  static float core_temp_total = 0;
-
-  core_temp_total -= core_temp_readings[core_temp_read_index];
-  core_temp_readings[core_temp_read_index] = analogReadTemp();
-  core_temp_total += core_temp_readings[core_temp_read_index];
-  core_temp_read_index++;
-
-  if (core_temp_read_index >= ANALOG_READINGS) {
-    core_temp_read_index = 0;
-  }
-
-  core_temp_average = core_temp_total / ANALOG_READINGS;
-}
-
-void send_data() {
-  const auto button_pressing = digitalRead(pins.tact_switch) == LOW;
-
-  JsonDocument doc;
-
-  doc["button_pressing"] = button_pressing;
-  doc["light_strength"] = light_strength_average;
-  doc["temperature"] = core_temp_average;
-
-  serialize(doc);
-
-  Serial.println();
-}
-
-Commands current_command;
-ChangeColor command_change_color_data;
-Tone command_tone_data;
-
-void command_change_color(const ChangeColor &data) {
-  command_change_color_data = data;
-
-  analogWrite(pins.led_red, data.r);
-  analogWrite(pins.led_green, data.g);
-  analogWrite(pins.led_blue, data.b);
-}
-
-void command_change_led_builtin(const bool data) {
-  digitalWrite(LED_BUILTIN, data);
-}
-
-void command_tone(const Tone &data) {
-  command_tone_data = data;
-
-  if (data.duration) {
-    tone(pins.speaker, data.frequency, data.duration.value());
+uint32_t get_device_id() {
+  if constexpr (CUSTOM_DEVICE_ID > 0) {
+    return CUSTOM_DEVICE_ID;
   } else {
-    tone(pins.speaker, data.frequency);
-  }
-}
+    static uint32_t id;
+    static bool output_hash_got = false;
 
-void command_no_tone() {
-  noTone(pins.speaker);
-}
+    if (!output_hash_got) {
+      uint8_t raw_id[4];
 
-void change_pins(const PinInformation &new_pins) {
-  auto need_to_restore_tone = false;
+      flash_get_unique_id(raw_id);
 
-  if (pins.speaker != new_pins.speaker) {
-    if (!command_tone_data.duration) {
-      need_to_restore_tone = true;
+      id = XXH32(raw_id, 4, 0);
+
+      output_hash_got = true;
     }
 
-    command_no_tone();
-  }
-
-  const auto led_red_changed = pins.led_red != new_pins.led_red;
-  const auto led_green_changed = pins.led_green != new_pins.led_green;
-  const auto led_blue_changed = pins.led_blue != new_pins.led_blue;
-
-  const auto need_to_restore_color = led_red_changed || led_green_changed || led_blue_changed;
-
-  uint8_t r, g, b;
-
-  if (led_red_changed) {
-    r = command_change_color_data.r;
-
-    command_change_color_data.r = 0;
-  }
-
-  if (led_green_changed) {
-    g = command_change_color_data.g;
-
-    command_change_color_data.g = 0;
-  }
-
-  if (led_blue_changed) {
-    b = command_change_color_data.b;
-
-    command_change_color_data.b = 0;
-  }
-
-  if (need_to_restore_color) {
-    command_change_color(command_change_color_data);
-  }
-
-  pins = new_pins;
-
-  refresh_pins();
-
-  if (need_to_restore_tone) {
-    command_tone(command_tone_data);
-  }
-
-  if (need_to_restore_color) {
-    command_change_color({
-      led_red_changed   ? r : command_change_color_data.r,
-      led_green_changed ? g : command_change_color_data.g,
-      led_blue_changed  ? b : command_change_color_data.b,
-    });
+    return id;
   }
 }
 
-void command_change_pin(const JsonDocument &doc) {
-  static const __FlashStringHelper* pin_names[6] = {
-    F("speaker"),
-    F("tact switch"),
-    F("green led"),
-    F("blue led"),
-    F("red led"),
-    F("light sensor"),
-  };
+PinInformation core0Pins;
+PinInformation core1Pins;
 
-  if (doc["pins"] == nullptr) return;
+void change_pins(const PinInformation &new_pins) {
+  core0Pins = new_pins;
 
-  const uint8_t speaker_pin = doc["pins"]["speaker"] | pins.speaker;
-  const uint8_t tact_switch_pin = doc["pins"]["tact_switch"] | pins.tact_switch;
-  const uint8_t led_green_pin = doc["pins"]["led_green"] | pins.led_green;
-  const uint8_t led_blue_pin = doc["pins"]["led_blue"] | pins.led_blue;
-  const uint8_t led_red_pin = doc["pins"]["led_red"] | pins.led_red;
-  const uint8_t light_sensor_pin = doc["pins"]["light_sensor"] | pins.light_sensor;
+  rp2040.fifo.push_nb(FIFO_REFRESH_PINS);
+}
+
+void request_restore_default_pins() {
+  change_pins({});
+}
+
+void request_change_pin(const OptionalPinInformation &maybe_new_pins) {
+  const auto new_pins = maybe_new_pins.merge(core0Pins);
+  const auto speaker_pin = new_pins.speaker;
+  const auto tact_switch_pin = new_pins.tact_switch;
+  const auto led_green_pin = new_pins.led_green;
+  const auto led_blue_pin = new_pins.led_blue;
+  const auto led_red_pin = new_pins.led_red;
+  const auto light_sensor_pin = new_pins.light_sensor;
 
   {
-    const uint8_t pins[6] = {
+    const array<uint8_t, 6> pins_array = {
       speaker_pin,
       tact_switch_pin,
       led_green_pin,
@@ -502,21 +302,12 @@ void command_change_pin(const JsonDocument &doc) {
     };
 
     // Check for pin duplicates
-    for (auto i = 0; i < 6; i++) {
-      for (auto j = 0; j < 6; j++) {
+    for (auto i = 0; i < pins_array.size(); i++) {
+      for (auto j = 0; j < pins_array.size(); j++) {
         if (i == j) continue;
 
-        if (pins[i] == pins[j]) {
-          String message = F("Pin collision detected: ");
-
-          message.concat(pin_names[i]);
-          message.concat(F(" pin and "));
-          message.concat(pin_names[j]);
-          message.concat(F(" pin are the same number"));
-
-          const Error e { 16, message };
-
-          e.send();
+        if (pins_array[i] == pins_array[j]) {
+          PinCollisionError().send();
 
           return;
         }
@@ -524,254 +315,332 @@ void command_change_pin(const JsonDocument &doc) {
     }
   }
 
-  change_pins({
-    speaker_pin,
-    tact_switch_pin,
-    led_green_pin,
-    led_blue_pin,
-    led_red_pin,
-    light_sensor_pin
-  });
+  change_pins(new_pins);
 }
 
-void command_restore_default_pins() {
-  change_pins({});
+volatile bool button_pressing = false;
+volatile int light_strength_average = 0;
+volatile float core_temp_average = 0;
+
+void send_data() {
+  static_assert(sizeof(int) == 4, "This protocol only supports int with 4 bytes");
+  static_assert(sizeof(float) == 4, "This protocol only supports float with 4 bytes");
+
+  Serial.write(RESPONSE_DATA_START);
+
+  Serial.write(button_pressing ? 1 : 0);
+
+  const int raw_light_strength_average = light_strength_average;
+  const auto *light_strength_average_ptr = reinterpret_cast<const uint8_t*>(&raw_light_strength_average);
+
+  Serial.write(light_strength_average_ptr[3]);
+  Serial.write(light_strength_average_ptr[2]);
+  Serial.write(light_strength_average_ptr[1]);
+  Serial.write(light_strength_average_ptr[0]);
+
+  const float raw_core_temp_average = core_temp_average;
+  const auto *core_temp_average_ptr = reinterpret_cast<const uint8_t*>(&raw_core_temp_average);
+
+  Serial.write(core_temp_average_ptr[3]);
+  Serial.write(core_temp_average_ptr[2]);
+  Serial.write(core_temp_average_ptr[1]);
+  Serial.write(core_temp_average_ptr[0]);
 }
 
-void write_pins(JsonDocument &doc) {
-  doc["pins"]["speaker"] = pins.speaker;
-  doc["pins"]["tact_switch"] = pins.tact_switch;
-  doc["pins"]["led_green"] = pins.led_green;
-  doc["pins"]["led_blue"] = pins.led_blue;
-  doc["pins"]["led_red"] = pins.led_red;
-  doc["pins"]["light_sensor"] = pins.light_sensor;
+void send_device_info() {
+  const auto *protocol_version_ptr = reinterpret_cast<const uint8_t*>(&PROTOCOL_VERSION);
+
+  Serial.write(protocol_version_ptr[1]);
+  Serial.write(protocol_version_ptr[0]);
+
+  const auto device_id = get_device_id();
+  const auto *device_id_ptr = reinterpret_cast<const uint8_t*>(&device_id);
+
+  Serial.write(device_id_ptr[3]);
+  Serial.write(device_id_ptr[2]);
+  Serial.write(device_id_ptr[1]);
+  Serial.write(device_id_ptr[0]);
+
+  Serial.write(core0Pins.speaker);
+  Serial.write(core0Pins.tact_switch);
+  Serial.write(core0Pins.led_green);
+  Serial.write(core0Pins.led_blue);
+  Serial.write(core0Pins.led_red);
+  Serial.write(core0Pins.light_sensor);
 }
 
-void make_device_info(JsonDocument &doc) {
-  doc["version"] = PROTOCOL_VERSION;
-  doc["device_id"] = get_device_id();
-  write_pins(doc);
-}
-
-bool negotiate() {
-  const char desired_transfer_mode = Serial.peek();
-
-  if (desired_transfer_mode == -1) {
-    const Error e { 2, F("Negotiation failed: No data received") };
-
-    e.send();
-
-    return false;
-  }
-
-  if (desired_transfer_mode != '{') {
-    char null_buf;
-
-    Serial.readBytes(&null_buf, 1);
-
-    switch (desired_transfer_mode) {
-      case 'J':
-      transfer_mode = TransferMode::JSON;
-
-      break;
-
-      case 'M':
-      transfer_mode = TransferMode::MSGPACK;
-
-      break;
-
-      default: {
-        String message = F("Negotiation failed: Invalid transfer mode: ");
-
-        message.concat(desired_transfer_mode);
-
-        const Error e { 2, message };
-
-        e.send();
-
-        return false;
-      }
-    }
-  }
-
-  JsonDocument doc;
-
-  if (!deserialize(doc)) return false;
-
-  const uint16_t version = doc["version"];
-
-  if (version < PROTOCOL_VERSION) {
-    String message = F("Negotiation failed: Incompatible protocol version: ");
-
-    message.concat(F("Expected minimal version is "));
-    message.concat(PROTOCOL_VERSION);
-    message.concat(F(", got "));
-    message.concat(version);
-
-    const Error e { 2, message };
-
-    e.send();
-
-    return false;
-  }
-
-  command_change_pin(doc);
-
-  JsonDocument device_info;
-
-  make_device_info(device_info);
-
-  serialize(device_info);
-  Serial.println();
-
-  char host_answer;
-  const auto timeout_start = millis();
-
-  while (true) {
-    if (millis() - timeout_start > ACK_TIMEOUT_MS) {
-      Error e { 2, F("Negotiation failed: Host answer timed out") };
-
-      e.send();
-
-      return false;
-    }
-
-    if (Serial.available() > 0) {
-      Serial.readBytes(&host_answer, 1);
-    }
-
-    if (host_answer == '\0') continue;
-
-    if (host_answer == 'E') { // means that host reported an error
-      if (!deserialize(doc)) return false;
-
-      String message = F("Negotiation failed: ");
-
-      message.concat(F("Host sent error with code "));
-
-      const uint8_t code = doc["code"];
-      message.concat(code);
-
-      message.concat(F(": "));
-
-      String message_ = doc["message"] | "[Empty message]";
-      message.concat(message_);
-
-      Error e { 2, message };
-
-      e.send();
-
-      return false;
-    }
-
-    if (host_answer == 'A') { // means acknowledgements
-      negotiated = true;
-
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool read_command() {
-  Serial.flush();
-
-  const uint32_t command = Serial.parseInt(SKIP_WHITESPACE);
-
-  Serial.flush();
-
-  if (Serial.available() == 0 || command < 0) return false;
-
-  if (!negotiated) {
-    if (command != MAGIC_COMMAND_NEGOTIATE) {
-      Error e { 0, F("Need to negotiate") };
-
-      e.send();
-
-      Serial.readStringUntil('\n');
-
-      return false;
-    }
-
-    return negotiate();
-  } else if (command == MAGIC_COMMAND_NEGOTIATE) {
-    negotiated = false;
-
-    return negotiate();
-  } else if (command == MAGIC_COMMAND_DISCONNECT) { // Actually MAGIC_COMMAND_DISCONNECT + "\n"
-    negotiated = false;
-
-    return true;
-  }
-
-  char device_id_buf[11];
-
-  Serial.readBytes(device_id_buf, 10);
-
-  if (strcmp(get_device_id(), device_id_buf) != 0) return false;
-
-  Serial.flush();
-
-  current_command.all = command;
-
-  JsonDocument doc;
-
-  if (!deserialize(doc)) return false;
-
-  if (current_command.change_pin) {
-    command_no_tone();
-
-    command_change_pin(doc);
-  } else if (current_command.restore_default_pins) {
-    command_no_tone();
-
-    command_restore_default_pins();
-  }
-
-  if (current_command.change_color) {
-    command_change_color({ doc["color"]["r"], doc["color"]["g"], doc["color"]["b"] });
-  }
-
-  if (current_command.change_led_builtin) {
-    command_change_led_builtin(doc["led_builtin"]);
-  }
-
-  if (current_command.tone) {
-    const uint16_t frequency = doc["tone"]["frequency"];
-    const uint32_t raw_duration = doc["tone"]["duration"] | 0;
-    const auto duration = raw_duration == 0 ? nullopt : optional<uint32_t>(raw_duration);
-
-    command_tone({ frequency, duration });
-  } else if (current_command.no_tone) {
-    command_no_tone();
-  }
-
-  return true;
-}
+bool send_data_forever = false;
 
 void setup() {
   Serial.begin(115200);
-  Serial.setTimeout(16);
+  Serial.setTimeout(2);
 
   while (!Serial);
-
-  for (auto i = 0; i < ANALOG_READINGS; i++) {
-    light_strength_readings[i] = 0;
-    core_temp_readings[i] = 0.0;
-  }
-
-  refresh_pins();
 }
 
 void loop() {
-  smooth_analog_values();
-
-  if (!negotiated) return;
-
-  send_data();
+  if (send_data_forever)
+    send_data();
 }
 
+optional<uint8_t> serial_read_char() {
+  const auto data = Serial.read();
+
+  if (data == -1)
+    return nullopt;
+
+  return static_cast<uint8_t>(data);
+}
+
+template <std::size_t N>
+optional<array<uint8_t, N>> serial_read_chars() {
+  array<uint8_t, N> ret;
+
+  for (std::size_t i = 0; i < N; ++i) {
+    const auto data = serial_read_char();
+
+    if (!data) return nullopt;
+
+    ret[i] = data.value();
+  }
+
+  return ret;
+}
+
+bool get_n_bit(uint8_t flags, std::size_t n) {
+  return (flags >> n) & 0b1;
+}
+
+Tone tone_data;
+RGBColor change_color_data;
+
 void serialEvent() {
-  if (!read_command()) return;
+  static_assert(sizeof(void*) == 4, "This protocol only supports 32-bit pointers");
+
+  if (Serial.available() == 0) return;
+
+  const auto cmd = serial_read_char();
+
+  if (!cmd) return;
+
+  if (cmd == COMMAND_DATA_GET_IMMEDIATE) {
+    send_data();
+
+    return;
+  }
+  
+  if (cmd == COMMAND_DATA_GET_LOOP_ON) {
+    send_data_forever = true;
+
+    return;
+  }
+  
+  if (cmd == COMMAND_DATA_GET_LOOP_OFF) {
+    send_data_forever = false;
+
+    return;
+  }
+  
+  if (cmd == COMMAND_DEVICE_INFO_GET) {
+    send_device_info();
+
+    return;
+  }
+  
+  if (cmd == COMMAND_DATA_SET) {
+    const auto maybe_flags = serial_read_char();
+
+    if (!maybe_flags) {
+      DeserializationError().send();
+
+      return;
+    }
+
+    const auto flags = maybe_flags.value();
+
+    if (get_n_bit(flags, 0)) { // Restore default pins
+      request_restore_default_pins();
+    } else if (get_n_bit(flags, 1)) { // Change pins
+      const auto speaker = serial_read_char();
+      const auto tact_switch = serial_read_char();
+      const auto led_green = serial_read_char();
+      const auto led_blue = serial_read_char();
+      const auto led_red = serial_read_char();
+      const auto light_sensor = serial_read_char();
+
+      if (!(speaker && tact_switch && led_green && led_blue && led_red && light_sensor)) {
+        DeserializationError().send();
+
+        return;
+      }
+
+      request_change_pin({
+        speaker == 0 ? nullopt : speaker,
+        tact_switch == 0 ? nullopt : tact_switch,
+        led_green == 0 ? nullopt : led_green,
+        led_blue == 0 ? nullopt : led_blue,
+        led_red == 0 ? nullopt : led_red,
+        light_sensor == 0 ? nullopt : light_sensor
+      });
+    }
+
+    if (get_n_bit(flags, 2)) { // No tone
+      rp2040.fifo.push_nb(FIFO_NO_TONE);
+    } else if (get_n_bit(flags, 3)) { // Tone
+      const auto maybe_data = serial_read_chars<2 + 4>(); // freq + duration
+
+      if (!maybe_data) {
+        DeserializationError().send();
+
+        return;
+      }
+
+      const auto data = maybe_data.value();
+
+      const uint16_t frequency0 = data[0];
+      const uint16_t frequency1 = data[1];
+
+      const uint32_t duration0 = data[2];
+      const uint32_t duration1 = data[3];
+      const uint32_t duration2 = data[4];
+      const uint32_t duration3 = data[5];
+
+      tone_data.frequency = (frequency0 << 8) | frequency1;
+
+      auto duration = (duration0 << 24) | (duration1 << 16) | (duration2 << 8) | duration3;
+
+      if (duration > 0)
+        tone_data.duration.emplace(std::move(duration));
+      else
+        tone_data.duration.reset();
+
+      rp2040.fifo.push_nb(FIFO_TONE);
+      rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&tone_data));
+    }
+
+    if (get_n_bit(flags, 4)) { // LED Builtin
+      const auto maybe_data = serial_read_char();
+
+      if (!maybe_data) {
+        DeserializationError().send();
+
+        return;
+      }
+
+      const auto data = maybe_data.value();
+
+      rp2040.fifo.push_nb(FIFO_LED_BUILTIN);
+      rp2040.fifo.push_nb(data > 0);
+    }
+
+    if (get_n_bit(flags, 5)) { // RGB LED
+      const auto maybe_data = serial_read_chars<1 + 1 + 1>(); // r + g + b
+
+      if (!maybe_data) {
+        DeserializationError().send();
+
+        return;
+      }
+
+      const auto data = maybe_data.value();
+
+      change_color_data.r = data[0];
+      change_color_data.g = data[1];
+      change_color_data.b = data[2];
+
+      rp2040.fifo.push_nb(FIFO_RGB_LED);
+      rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&change_color_data));
+    }
+
+    return;
+  }
+}
+
+void smooth_analog_values() {
+  static int light_strength_read_index = 0;
+  static int light_strength_total = 0;
+  static array<int, ANALOG_READINGS> light_strength_readings {};
+  static array<float, ANALOG_READINGS> core_temp_readings {};
+
+  light_strength_total -= light_strength_readings[light_strength_read_index];
+  light_strength_readings[light_strength_read_index] = analogRead(core1Pins.light_sensor);
+  light_strength_total += light_strength_readings[light_strength_read_index];
+  light_strength_read_index++;
+
+  if (light_strength_read_index >= light_strength_readings.size()) {
+    light_strength_read_index = 0;
+  }
+
+  light_strength_average = light_strength_total / light_strength_readings.size();
+
+  static int core_temp_read_index = 0;
+  static float core_temp_total = 0;
+
+  core_temp_total -= core_temp_readings[core_temp_read_index];
+  core_temp_readings[core_temp_read_index] = analogReadTemp();
+  core_temp_total += core_temp_readings[core_temp_read_index];
+  core_temp_read_index++;
+
+  if (core_temp_read_index >= core_temp_readings.size()) {
+    core_temp_read_index = 0;
+  }
+
+  core_temp_average = core_temp_total / core_temp_readings.size();
+}
+
+void refresh_pins() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(core1Pins.speaker, OUTPUT);
+  pinMode(core1Pins.tact_switch, INPUT_PULLUP);
+  pinMode(core1Pins.led_green, OUTPUT);
+  pinMode(core1Pins.led_blue, OUTPUT);
+  pinMode(core1Pins.led_red, OUTPUT);
+  pinMode(core1Pins.light_sensor, INPUT);
+}
+
+void command_no_tone() {
+  noTone(core1Pins.speaker);
+}
+
+void command_tone(const Tone &data) {
+  if (data.duration) {
+    tone(core1Pins.speaker, data.frequency, data.duration.value());
+  } else {
+    tone(core1Pins.speaker, data.frequency);
+  }
+}
+
+void command_change_color(const RGBColor &data) {
+  analogWrite(core1Pins.led_red, data.r);
+  analogWrite(core1Pins.led_green, data.g);
+  analogWrite(core1Pins.led_blue, data.b);
+}
+
+void command_change_led_builtin(const bool data) {
+  digitalWrite(LED_BUILTIN, data);
+}
+
+void setup1() {
+  refresh_pins();
+}
+
+void loop1() {
+  if (uint32_t cmd; rp2040.fifo.pop_nb(&cmd)) {
+    if (cmd == FIFO_REFRESH_PINS) {
+      core1Pins = core0Pins;
+
+      refresh_pins();
+    } else if (cmd == FIFO_NO_TONE) {
+      command_no_tone();
+    } else if (cmd == FIFO_TONE) {
+      command_tone(*reinterpret_cast<Tone*>(rp2040.fifo.pop()));
+    } else if (cmd == FIFO_LED_BUILTIN) {
+      command_change_led_builtin(rp2040.fifo.pop());
+    } else if (cmd == FIFO_RGB_LED) {
+      command_change_color(*reinterpret_cast<RGBColor*>(rp2040.fifo.pop()));
+    }
+  }
+
+  smooth_analog_values();
+  button_pressing = digitalRead(core1Pins.tact_switch) == LOW;
 }

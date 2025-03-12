@@ -1,20 +1,11 @@
 package dev.wycey.mido.fraiselait
 
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.core.StreamReadFeature
-import com.fasterxml.jackson.databind.DatabindException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
-import com.fasterxml.jackson.module.kotlin.kotlinModule
 import dev.wycey.mido.fraiselait.commands.Command
-import dev.wycey.mido.fraiselait.constants.MAGIC_COMMAND_DISCONNECT
-import dev.wycey.mido.fraiselait.constants.MAGIC_COMMAND_NEGOTIATE
-import dev.wycey.mido.fraiselait.constants.PROTOCOL_VERSION
-import dev.wycey.mido.fraiselait.coroutines.sync.ReadWriteMutex
+import dev.wycey.mido.fraiselait.constants.*
 import dev.wycey.mido.fraiselait.coroutines.sync.newCondition
-import dev.wycey.mido.fraiselait.models.*
-import dev.wycey.mido.fraiselait.state.StateManager
+import dev.wycey.mido.fraiselait.models.DeviceInformation
+import dev.wycey.mido.fraiselait.models.DeviceState
+import dev.wycey.mido.fraiselait.models.NonNullPinInformation
 import dev.wycey.mido.fraiselait.util.Disposable
 import dev.wycey.mido.fraiselait.util.OperatingSystem
 import dev.wycey.mido.fraiselait.util.PrePhase
@@ -24,10 +15,13 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.msgpack.jackson.dataformat.MessagePackMapper
 import processing.core.PApplet
 import processing.serial.Serial
-import java.util.concurrent.atomic.AtomicInteger
+import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -37,48 +31,16 @@ public class SerialDevice
   constructor(
     parent: PApplet,
     public val serialRate: Int,
-    private val portSelection: SerialPortSelection = SerialPortSelection.Automatic,
-    public var transferMode: TransferMode = TransferMode.MSGPACK,
-    private val additionalPinInformation: PinInformation = PinInformation()
+    private val portSelection: SerialPortSelection = SerialPortSelection.Automatic
   ) : Disposable,
     PrePhase {
     public companion object {
-      private val mapperThreadLocal = ThreadLocal<ObjectMapper>()
-
       @JvmStatic
       public fun list(): Array<String> = Serial.list()
-
-      private fun getMapperContextElement(transferMode: TransferMode) =
-        mapperThreadLocal.asContextElement(
-          value =
-            when (transferMode) {
-              TransferMode.JSON ->
-                jacksonMapperBuilder()
-                  .enable(
-                    StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION
-                  ).build()
-
-              TransferMode.MSGPACK ->
-                MessagePackMapper().handleBigIntegerAndBigDecimalAsString().registerModule(
-                  // Manually register kotlin module to avoid issues with class loader
-                  kotlinModule {}
-                )
-            }
-        )
     }
-
-    public constructor(
-      parent: PApplet,
-      serialRate: Int,
-      portSelection: SerialPortSelection = SerialPortSelection.Automatic,
-      transferMode: TransferMode = TransferMode.MSGPACK,
-      additionalPinInformation: JVMPinInformation = JVMPinInformation()
-    ) : this(parent, serialRate, portSelection, transferMode, additionalPinInformation.toPinInformation())
 
     private val lock = Mutex()
     private val runningCondition = lock.newCondition()
-    private val maxDeserializationRetries = 10
-    private val receivingDataQueue = ReceivingDataQueue()
 
     public var id: String? = null
       private set
@@ -92,19 +54,13 @@ public class SerialDevice
         pinsListeners.forEach { it(value) }
       }
 
-    private val stateLock = ReadWriteMutex()
-
-    public var state: DeviceState? = null
-      get() =
-        runBlocking {
-          stateLock.withReadLock {
-            field
-          }
-        }
+    private var _state = AtomicReference<DeviceState?>(null)
+    public var state: DeviceState?
+      get() = _state.get()
       private set(value) {
-        if (field == value) return
+        if (_state.get() == value) return
 
-        field = value
+        _state.set(value)
 
         stateListeners.forEach { it(value) }
       }
@@ -112,73 +68,73 @@ public class SerialDevice
     internal inner class SerialProxy :
       PApplet(),
       SerialReceiver {
-      private val retries = AtomicInteger(0)
+      internal val enableSerialEvent = AtomicBoolean(false)
+
+      var waitForNewResponse: Boolean = true
+      var response: UByte = 0u
 
       override fun serialEvent(serial: Serial) {
-        if (serial.available() > 0) {
-          val line =
-            CoroutineScope(coroutineContext).async {
-              withContext(coroutineContext) {
-                val bytes = serial.readBytesUntil('\n'.code)
+        try {
+          if (serial.available() == 0 || !enableSerialEvent.get()) return
 
-                if (bytes != null && bytes.size < 3) null else bytes
+          if (waitForNewResponse) {
+            val startingResponse = serial.read()
+
+            if (startingResponse == -1) return
+
+            response = startingResponse.toUByte()
+            waitForNewResponse = false
+
+            when (startingResponse.toUByte()) {
+              0u.toUByte() -> {
+                waitForNewResponse = true
+              }
+
+              RESPONSE_DATA_START -> {
+                serial.buffer(1 + 4 + 4)
+              }
+
+              RESPONSE_RESERVED_ERROR -> {
+                serial.buffer(1)
+              }
+
+              else -> {
+                println("Unknown response: $startingResponse")
+
+                waitForNewResponse = true
               }
             }
 
-          CoroutineScope(coroutineContext).launch(
-            getMapperContextElement(transferMode)
-          ) {
-            val body = line.await() ?: return@launch
+            return
+          }
 
-            if (body[0] == 'E'.code.toByte()) {
-              val errorBytes = body.copyOfRange(1, body.size)
-              val errorData = mapperThreadLocal.get().readValue(errorBytes, ErrorData::class.java)
+          waitForNewResponse = true
 
-              println("Error received: ${errorData.message}")
+          when (response) {
+            RESPONSE_DATA_START -> {
+              val dataBytes = readBytesNonSuspend(serial, 1 + 4 + 4)
+              val tactSwitch = dataBytes[0] > 0
+              val lightStrength = ByteBuffer.wrap(dataBytes.copyOfRange(1, 5)).int
+              val coreTemperature = ByteBuffer.wrap(dataBytes.copyOfRange(5, 9)).float
 
-              return@launch
+              state = DeviceState(tactSwitch, lightStrength, coreTemperature)
             }
 
-            launch(
-              Dispatchers.Unconfined +
-                getMapperContextElement(transferMode)
-            ) retry@{
-              val mapper = mapperThreadLocal.get()
+            RESPONSE_RESERVED_ERROR -> {
+              val code = readByteNonSuspend(serial).toInt()
 
-              try {
-                if (phase == SerialDevicePhase.RUNNING) {
-                  stateLock.withWriteLock {
-                    state = mapper.readValue(body, DeviceState::class.java)
-                  }
-
-                  retries.set(0)
-
-                  return@retry
-                }
-
-                receivingDataQueue.push(body)
-              } catch (e: Exception) {
-                when (e) {
-                  is JsonParseException, is MismatchedInputException -> {
-                    val newRetries = retries.incrementAndGet()
-
-                    if (newRetries < maxDeserializationRetries) {
-                      delay(10 * newRetries)
-
-                      return@retry
-                    }
-
-                    println("Deserialization failed, giving up")
-                    retries.set(0)
-                  }
-
-                  else -> {
-                    throw e
-                  }
-                }
+              if (code == 0x00) {
+                println("Error received: Deserialization error")
+              } else if (code == 0x01) {
+                println("Error received: pin collision")
               }
             }
           }
+
+          serial.buffer(1)
+        } catch (e: Exception) {
+          println("Error in serial event:")
+          e.printStackTrace()
         }
       }
     }
@@ -186,7 +142,8 @@ public class SerialDevice
     public var port: String? = if (portSelection is SerialPortSelection.Manual) portSelection.port else null
       set(value) {
         if (value == null) {
-          disconnect()
+          if (serial != null) disconnect(serial!!)
+
           serial = null
 
           field = null
@@ -209,10 +166,11 @@ public class SerialDevice
     private val maxRetries = 10
     private var errorCatchRetries = 0
 
-    private fun disconnect() {
+    private fun disconnect(serial: Serial) {
       // Need to send additional '\n' to ensure that the device recognizes the disconnect command
       try {
-        serial?.write(MAGIC_COMMAND_DISCONNECT.toString() + "\n")
+        proxy.enableSerialEvent.set(false)
+        serial.write(COMMAND_DATA_GET_LOOP_OFF.toInt())
       } catch (_: RuntimeException) {
         // Ignore I/O exceptions
       }
@@ -221,33 +179,46 @@ public class SerialDevice
       state = null
     }
 
-    private suspend fun flushData() {
-      val serialRead =
-        CoroutineScope(coroutineContext).async {
-          serial?.clear()
-        }
+    private fun readByteNonSuspend(serial: Serial): UByte {
+      var data: Int
 
-      while (!receivingDataQueue.isEmpty()) {
-        receiveData()
+      do {
+        data = serial.read()
+      } while (data < 0)
+
+      return data.toUByte()
+    }
+
+    private fun readBytesNonSuspend(
+      serial: Serial,
+      byteCount: Int
+    ): ByteArray {
+      var data = ByteArray(byteCount)
+
+      while (serial.available() < byteCount) {
+        Thread.sleep(1)
       }
 
-      serialRead.await()
+      var res: Int
+
+      do {
+        res = serial.readBytes(data)
+      } while (res == 0)
+
+      return data
     }
 
-    private suspend fun receiveData() = receivingDataQueue.pop()
+    private suspend fun readBytes(
+      serial: Serial,
+      byteCount: Int,
+      timeout: Duration = 100.milliseconds
+    ): ByteArray {
+      val serialRead =
+        CoroutineScope(coroutineContext).async {
+          readBytesNonSuspend(serial, byteCount)
+        }
 
-    private fun sendData(
-      data: Int,
-      serial: Serial? = null
-    ) {
-      (serial ?: this.serial)?.write(data)
-    }
-
-    private fun sendData(
-      data: ByteArray,
-      serial: Serial? = null
-    ) {
-      (serial ?: this.serial)?.write(data)
+      return withTimeout(timeout) { serialRead.await() }
     }
 
     private fun establishSerialConnection(): Serial? {
@@ -256,7 +227,7 @@ public class SerialDevice
 
         val serial = Serial(proxy, actualPort, serialRate)
 
-        serial.bufferUntil('\n'.code)
+        serial.buffer(1)
 
         println("SerialDevice: Established connection with port ${serial.port.portName}")
 
@@ -304,92 +275,71 @@ public class SerialDevice
     }
 
     private fun negotiateConnection(serial: Serial) {
-      val data = NegotiationData(additionalPinInformation)
       var retries = 0
 
-      CoroutineScope(coroutineContext).launch(
-        getMapperContextElement(transferMode)
-      ) retry@{
-        val mapper = mapperThreadLocal.get()
+      CoroutineScope(coroutineContext).launch retry@{
+        while (true) {
+          // If the device is still sending data, send disconnect command
+          if (serial.available() > 0) {
+            println("Device is still sending data, trying to disconnect")
 
-        // Flush all data before sending the negotiation data
-        flushData()
+            disconnect(serial)
 
-        // If the device is still sending data, send disconnect command
-        if (serial.available() > 0) {
-          disconnect()
+            delay(40)
 
-          delay(40)
-
-          flushData()
-
-          retries++
-
-          if (retries >= 3) {
-            throw RuntimeException("Failed to disconnect from device")
-          }
-
-          return@retry // Retry negotiation
-        }
-
-        sendData(
-          MAGIC_COMMAND_NEGOTIATE.toString().toByteArray() + transferMode.toByte() +
-            mapper.writeValueAsBytes(
-              data
-            ),
-          serial
-        )
-
-        val deviceInformationBytes = receiveData()
-
-        if (deviceInformationBytes[0] == 'E'.code.toByte()) {
-          val errorBytes = deviceInformationBytes.copyOfRange(1, deviceInformationBytes.size)
-          val errorData = mapper.readValue(errorBytes, ErrorData::class.java)
-
-          throw RuntimeException("Error during negotiation (code ${errorData.code}): ${errorData.message}")
-        }
-
-        val deviceInformation =
-          try {
-            mapper.readValue(deviceInformationBytes, DeviceInformation::class.java)
-          } catch (e: DatabindException) {
-            flushData()
-
-            println("Failed to deserialize device information, retrying negotiation")
-
-            delay(5000)
+            serial.clear()
 
             retries++
 
             if (retries >= 3) {
-              throw RuntimeException("Failed to negotiate with device").initCause(e)
+              throw RuntimeException("Failed to disconnect from device")
             }
 
-            return@retry
+            continue // Retry negotiation
           }
 
-        if (deviceInformation.version < PROTOCOL_VERSION.toInt()) {
-          val errorData =
-            ErrorData(
-              2,
-              "Negotiation failed: Incompatible protocol version: Expected $PROTOCOL_VERSION, " +
-                "got ${deviceInformation.version}"
+          // Flush all data before sending the negotiation data
+          serial.clear()
+
+          serial.write(COMMAND_DEVICE_INFO_GET.toInt())
+
+          val deviceInformation =
+            try {
+              DeviceInformation.fromData(readBytes(serial, 2 + 4 + 6, 2.seconds)) // version + deviceId + pins
+            } catch (e: Exception) {
+              serial.clear()
+
+              println("Failed to deserialize device information, retrying negotiation")
+
+              delay(2.seconds)
+
+              retries++
+
+              if (retries >= 3) {
+                throw RuntimeException("Failed to negotiate with device").initCause(e)
+              }
+
+              continue
+            }
+
+          println("Device information: $deviceInformation")
+
+          if (deviceInformation.version < PROTOCOL_VERSION.toInt()) {
+            throw RuntimeException(
+              "Incompatible protocol version: Expected $PROTOCOL_VERSION, got ${deviceInformation.version}"
             )
+          }
 
-          sendData(errorData.toDataBytes(mapper))
+          id = deviceInformation.deviceId
+          pins = deviceInformation.pins.toNonNullPinInformation()
 
-          throw RuntimeException(
-            "Incompatible protocol version: Expected $PROTOCOL_VERSION, got ${deviceInformation.version}"
-          )
+          serial.write(COMMAND_DATA_GET_LOOP_ON.toInt())
+
+          proxy.enableSerialEvent.set(true)
+          phase = SerialDevicePhase.RUNNING
+
+          break
         }
-
-        id = deviceInformation.deviceId
-        pins = deviceInformation.pins.toNonNullPinInformation()
-
-        // Send acknowledgement
-        sendData('A'.code, serial)
-
-        phase = SerialDevicePhase.RUNNING
       }
     }
 
@@ -431,13 +381,9 @@ public class SerialDevice
     private val coroutineContext = Dispatchers.IO + job + exceptionHandler
 
     init {
-      DevicePortWatcher.start(parent)
-
-      if (StateManager.registeredDevice == null) {
-        registerToStateManager()
-      }
-
       if (portSelection is SerialPortSelection.Automatic) {
+        DevicePortWatcher.start(parent)
+
         DevicePortWatcher.listen {
           if (port == null) {
             port = it.firstOrNull()
@@ -466,10 +412,7 @@ public class SerialDevice
         serial?.stop()
       }
 
-      CoroutineScope(coroutineContext).launch(
-        getMapperContextElement(transferMode)
-      ) {
-        val mapper = mapperThreadLocal.get()
+      CoroutineScope(coroutineContext).launch {
         val buf = mutableListOf<Command>()
 
         for (command in commandChannel) {
@@ -485,7 +428,7 @@ public class SerialDevice
                 if (serial != null && serial?.active() == true) {
                   val finalCommand = buf.reduce { acc, other -> acc.merge(other) }
 
-                  serial?.write(finalCommand.toDataBytes(mapper, id!!))
+                  serial?.write(finalCommand.toDataBytes())
 
                   if (finalCommand.pinChanges != null) {
                     pins = pins?.merge(finalCommand.pinChanges!!)
@@ -495,6 +438,8 @@ public class SerialDevice
                 }
               }
             }
+          } catch (e: NullPointerException) {
+            throw e
           } catch (_: RuntimeException) {
             // Nothing happened
           }
@@ -502,6 +447,7 @@ public class SerialDevice
       }
     }
 
+    @JvmOverloads
     public fun send(
       command: Command,
       buffered: Boolean = true
@@ -511,27 +457,25 @@ public class SerialDevice
       }
 
       runBlocking {
-        if (buffered == false) {
+        if (buffered) {
           commandChannel.send(command)
 
           return@runBlocking
         }
 
-        val ok =
-          lock.withLock {
+        lock.withLock {
+          val ok =
             runningCondition.awaitUntil(3.seconds) { phase == SerialDevicePhase.RUNNING }
+
+          if (!ok) {
+            throw IllegalStateException("SerialDevice was not running after 3 seconds")
           }
 
-        if (!ok) {
-          throw IllegalStateException("SerialDevice is not running after 3 seconds")
-        }
+          serial?.write(command.toDataBytes())
 
-        val mapper = mapperThreadLocal.get()
-
-        serial?.write(command.toDataBytes(mapper, id!!))
-
-        if (command.pinChanges != null) {
-          pins = pins?.merge(command.pinChanges!!)
+          if (command.pinChanges != null) {
+            pins = pins?.merge(command.pinChanges!!)
+          }
         }
       }
     }
@@ -540,7 +484,7 @@ public class SerialDevice
       runBlocking {
         lock.withLock {
           if (serial != null && phase == SerialDevicePhase.RUNNING) {
-            disconnect()
+            disconnect(serial!!)
           }
 
           serial?.stop()
@@ -580,10 +524,6 @@ public class SerialDevice
       stateListeners.remove(callback)
     }
 
-    public fun registerToStateManager() {
-      StateManager.registeredDevice = this
-    }
-
     public fun onDispose(callback: () -> Unit) {
       onDisposeCallbacks.add(callback)
     }
@@ -593,16 +533,12 @@ public class SerialDevice
     }
 
     override fun dispose() {
-      disconnect()
+      if (serial != null) disconnect(serial!!)
 
       phase = SerialDevicePhase.DISPOSED
 
       commandChannel.close()
       onDisposeCallbacks.forEach { it() }
-
-      runBlocking {
-        receivingDataQueue.clear()
-      }
 
       serial?.dispose()
       job.cancel()
@@ -616,8 +552,6 @@ public class SerialDevice
 
       if (serialRate != other.serialRate) return false
       if (portSelection != other.portSelection) return false
-      if (transferMode != other.transferMode) return false
-      if (additionalPinInformation != other.additionalPinInformation) return false
       if (runningCondition != other.runningCondition) return false
       if (id != other.id) return false
       if (pins != other.pins) return false
@@ -629,8 +563,6 @@ public class SerialDevice
     override fun hashCode(): Int {
       var result = serialRate
       result = 31 * result + portSelection.hashCode()
-      result = 31 * result + transferMode.hashCode()
-      result = 31 * result + additionalPinInformation.hashCode()
       result = 31 * result + runningCondition.hashCode()
       result = 31 * result + (id?.hashCode() ?: 0)
       result = 31 * result + (pins?.hashCode() ?: 0)
@@ -638,6 +570,5 @@ public class SerialDevice
       return result
     }
 
-    override fun toString(): String =
-      "SerialDevice(id=$id,rate=$serialRate,phase=$phase,state=$state,mode=$transferMode)"
+    override fun toString(): String = "SerialDevice(id=$id,rate=$serialRate,phase=$phase,state=$state)"
   }

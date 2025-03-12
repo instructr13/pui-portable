@@ -28,7 +28,7 @@ internal object DevicePortWatcher {
     }
 
   @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
-  private var coroutineContext = newSingleThreadContext("DevicePortWatcher") + job + exceptionHandler
+  private val coroutineContext = newSingleThreadContext("DevicePortWatcher") + job + exceptionHandler
 
   private var _started = AtomicBoolean(false)
 

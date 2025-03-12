@@ -1,6 +1,6 @@
 package dev.wycey.mido.fraiselait.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import dev.wycey.mido.fraiselait.constants.COMMAND_DATA_SET
 
 public data class Command(
   private var innerObject: CommandBuilder
@@ -18,15 +18,26 @@ public data class Command(
   internal val flags get() = innerObject.flags
   internal val pinChanges get() = innerObject.pins
 
-  public fun toDataBytes(
-    mapper: ObjectMapper,
-    deviceId: String
-  ): ByteArray {
-    val flagsBytes = flags.toString().toByteArray()
-    val deviceIdBytes = deviceId.toByteArray()
-    val data = mapper.writeValueAsBytes(innerObject)
+  public fun toDataBytes(): ByteArray {
+    var data = byteArrayOf(COMMAND_DATA_SET.toByte(), flags.toByte())
 
-    return flagsBytes + deviceIdBytes + data
+    innerObject.pins?.let {
+      data += it.toDataBytes()
+    }
+
+    innerObject.changeLedBuiltin?.let {
+      data += byteArrayOf(if (it) 1 else 0)
+    }
+
+    innerObject.tone?.let {
+      data += it.toDataBytes()
+    }
+
+    innerObject.changeColor?.let {
+      data += it.toDataBytes()
+    }
+
+    return data
   }
 
   public fun merge(other: Command): Command = Command(innerObject.merge(other.innerObject))

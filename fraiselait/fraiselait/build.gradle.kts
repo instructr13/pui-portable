@@ -14,8 +14,6 @@ dependencies {
 
   shadow(processingSerial)
   shadow(libs.bundles.processing.serial)
-
-  implementation(libs.bundles.jackson)
 }
 
 tasks.withType<ShadowJar> {
