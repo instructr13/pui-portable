@@ -3,8 +3,6 @@
 #include <array>
 #include <optional>
 
-#include "hardware/flash.h"
-
 using namespace std;
 
 ///bool core1_separate_stack = true;
@@ -256,11 +254,11 @@ uint32_t get_device_id() {
     static bool output_hash_got = false;
 
     if (!output_hash_got) {
-      uint8_t raw_id[4];
+      pico_unique_board_id_t raw_id;
 
-      flash_get_unique_id(raw_id);
+      pico_get_unique_board_id(&raw_id);
 
-      id = XXH32(raw_id, 4, 0);
+      id = XXH32(raw_id.id, 8, 0);
 
       output_hash_got = true;
     }
@@ -328,7 +326,7 @@ void send_data() {
 
   Serial.write(RESPONSE_DATA_START);
 
-  Serial.write(button_pressing ? 1 : 0);
+  Serial.write(button_pressing ? 0xff : 0);
 
   const int raw_light_strength_average = light_strength_average;
   const auto *light_strength_average_ptr = reinterpret_cast<const uint8_t*>(&raw_light_strength_average);

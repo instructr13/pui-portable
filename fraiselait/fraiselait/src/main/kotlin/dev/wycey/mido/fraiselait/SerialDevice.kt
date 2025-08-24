@@ -167,7 +167,6 @@ public class SerialDevice
     private var errorCatchRetries = 0
 
     private fun disconnect(serial: Serial) {
-      // Need to send additional '\n' to ensure that the device recognizes the disconnect command
       try {
         proxy.enableSerialEvent.set(false)
         serial.write(COMMAND_DATA_GET_LOOP_OFF.toInt())
