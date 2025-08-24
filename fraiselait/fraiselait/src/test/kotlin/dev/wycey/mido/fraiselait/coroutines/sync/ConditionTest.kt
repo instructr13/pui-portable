@@ -62,16 +62,16 @@ class ConditionTest {
   fun testNotifyOnce() {
     runBlocking {
       val waiters =
-        IntStream.range(0, 5)
-          .mapToObj { i ->
+        IntStream
+          .range(0, 5)
+          .mapToObj {
             async {
               lock.withLock {
                 val ret = cond.await(1.seconds)
                 ret
               }
             }
-          }
-          .collect(Collectors.toList())
+          }.collect(Collectors.toList())
           .toTypedArray()
 
       delay(100.milliseconds)
@@ -80,7 +80,8 @@ class ConditionTest {
       }
       val results = awaitAll(*waiters)
       val successCount =
-        results.stream()
+        results
+          .stream()
           .map { ret -> if (ret) 1 else 0 }
           .reduce { a, b -> a + b }
           .get()
@@ -92,16 +93,16 @@ class ConditionTest {
   fun testNotifyAll() {
     runBlocking {
       val waiters =
-        IntStream.range(0, 5)
-          .mapToObj { i ->
+        IntStream
+          .range(0, 5)
+          .mapToObj {
             async {
               lock.withLock {
                 val ret = cond.await(1.seconds)
                 ret
               }
             }
-          }
-          .collect(Collectors.toList())
+          }.collect(Collectors.toList())
           .toTypedArray()
 
       delay(100.milliseconds)
@@ -110,7 +111,8 @@ class ConditionTest {
       }
       val results = awaitAll(*waiters)
       val successCount =
-        results.stream()
+        results
+          .stream()
           .map { ret -> if (ret) 1 else 0 }
           .reduce { a, b -> a + b }
           .get()

@@ -7,7 +7,7 @@ plugins {
 group = "$group.fraiselait"
 version = "2.1.0"
 
-val processingSerial = files("../../lib/org.processing-serial-4.3.jar")
+val processingSerial = files("../../lib/org.processing-serial-4.4.jar")
 
 dependencies {
   implementation(libs.kotlinx.coroutines.core)

@@ -21,7 +21,7 @@ This project contains these packages:
 
 > [!IMPORTANT]
 > You need to extract the Processing serial library from the Processing IDE in order to build the project, named as
-> `org.processing.serial-4.3.jar` and put it in the `libs` directory.
+> `org.processing-serial-4.4.jar` and put it in the `lib` directory.
 
 ```shell
 ./gradlew assemble

@@ -19,13 +19,15 @@ fun filteredIncludedBuilds(filter: (IncludedBuild) -> Boolean = { true }) =
 fun addDependencyOnChildTasksOfIncludedBuilds(vararg taskNames: String) {
   taskNames.forEach { taskName ->
     tasks.register(taskName) {
-      dependsOn(filteredIncludedBuilds().flatMap {
-        it.projectDir.walkTopDown().filter { it.name == "build.gradle.kts" }.map { file ->
-          val path = file.parentFile.relativeTo(it.projectDir).path
+      dependsOn(
+        filteredIncludedBuilds().flatMap {
+          it.projectDir.walkTopDown().filter { it.name == "build.gradle.kts" }.map { file ->
+            val path = file.parentFile.relativeTo(it.projectDir).path
 
-          it.task(":$path:$taskName")
+            it.task(":$path:$taskName")
+          }
         }
-      })
+      )
     }
   }
 }
