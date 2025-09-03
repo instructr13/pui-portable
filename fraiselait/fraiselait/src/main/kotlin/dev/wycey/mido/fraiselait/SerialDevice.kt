@@ -260,6 +260,8 @@ public open class SerialDevice
       if (connectImmediately) {
         connect()
       }
+
+      addShutdownHook()
     }
 
     public fun addCapability(
@@ -434,6 +436,10 @@ public open class SerialDevice
     }
 
     public fun dispose() {
+      if (status == ConnectionStatus.DISPOSED) {
+        return
+      }
+
       DevicePortWatcher.unlisten(::serialPortListener)
 
       status = ConnectionStatus.DISPOSED
@@ -448,6 +454,14 @@ public open class SerialDevice
 
       id = null
       serial = null
+    }
+
+    private fun addShutdownHook() {
+      Runtime.getRuntime().addShutdownHook(
+        Thread {
+          dispose()
+        }
+      )
     }
 
     private fun serialPortListener(serials: Array<String>) {

@@ -55,6 +55,8 @@ internal object DevicePortWatcher {
         delay(10)
       }
     }
+
+    addShutdownHook()
   }
 
   fun dispose() {
@@ -73,5 +75,13 @@ internal object DevicePortWatcher {
 
   fun unlisten(listener: (Array<String>) -> Unit) {
     listeners.remove(listener)
+  }
+
+  fun addShutdownHook() {
+    Runtime.getRuntime().addShutdownHook(
+      Thread {
+        dispose()
+      }
+    )
   }
 }
