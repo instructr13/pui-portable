@@ -1,4 +1,4 @@
-package dev.wycey.mido.fraiselait.commands
+package dev.wycey.mido.fraiselait.builtins.commands
 
 internal sealed class Commands {
   internal data class ChangeColor(
@@ -15,8 +15,6 @@ internal sealed class Commands {
       rawG.toUByte(),
       rawB.toUByte()
     )
-
-    internal fun toDataBytes(): ByteArray = byteArrayOf(r.toByte(), g.toByte(), b.toByte())
   }
 
   internal data class Tone
@@ -32,19 +30,5 @@ internal sealed class Commands {
         rawFrequency.toUShort(),
         rawDuration?.toUInt()
       )
-
-      internal fun toDataBytes(): ByteArray {
-        val frequency = frequency.toULong()
-        val duration = duration ?: 0u
-
-        return byteArrayOf(
-          (frequency shr 8).toByte(),
-          frequency.toByte(),
-          (duration shr 24).toByte(),
-          (duration shr 16).toByte(),
-          (duration shr 8).toByte(),
-          duration.toByte()
-        )
-      }
     }
 }

@@ -12,12 +12,12 @@ constexpr uint32_t CUSTOM_DEVICE_ID = 0;
 
 /* PINS */
 
-constexpr uint8_t PIN_SPEAKER = 16;
-constexpr uint8_t PIN_TACT_SWITCH = 18;
-constexpr uint8_t PIN_LED_GREEN = 19;
-constexpr uint8_t PIN_LED_BLUE = 20;
-constexpr uint8_t PIN_LED_RED = 21;
-constexpr uint8_t PIN_LIGHT_SENSOR = 26;
+constexpr uint8_t PIN_SPEAKER = 8;
+constexpr uint8_t PIN_TACT_SWITCH = 9;
+constexpr uint8_t PIN_LED_GREEN = 12;
+constexpr uint8_t PIN_LED_BLUE = 11;
+constexpr uint8_t PIN_LED_RED = 10;
+constexpr uint8_t PIN_LIGHT_SENSOR = 28;
 
 /* DATA */
 
@@ -316,10 +316,14 @@ DecodeStatus decode(std::vector<std::byte> &in, std::vector<std::byte> &out) {
     const auto code = std::to_integer<uint8_t>(*it++);
 
     if (code == 0) {
-      // Invalid COBS
       in.erase(in.begin(), it);
 
-      return DecodeStatus::Error;
+      // Invalid COBS
+      if (it == in.end()) {
+        return DecodeStatus::Error;
+      }
+
+      return DecodeStatus::Complete;
     }
 
     for (size_t i = 1; i < code; ++i) {
@@ -333,18 +337,17 @@ DecodeStatus decode(std::vector<std::byte> &in, std::vector<std::byte> &out) {
       out.push_back(*it++);
     }
 
-    if (code < 0xFF) {
-      if (it == in.end()) {
-        break;
+    if (code != 0xFF) {
+      if (it != in.end() && std::to_integer<uint8_t>(*it) != 0) {
+        out.push_back(std::byte{0});
       }
 
-      out.push_back(std::byte{0});
     }
   }
 
   in.clear();
 
-  return DecodeStatus::Complete;
+  return DecodeStatus::InProgress;
 }
 
 } // namespace cobs
@@ -394,15 +397,20 @@ private:
 
 namespace crc8 {
 
-uint8_t compute(const std::vector<std::byte> &data) {
+uint8_t compute(const std::vector<std::byte>::const_iterator begin,
+                const std::vector<std::byte>::const_iterator end) {
+  static constexpr uint8_t POLYNOMIAL = 0x07;
+
   uint8_t crc = 0x00;
 
-  for (const auto b : data) {
+  for (auto it = begin; it < end; ++it) {
+    const auto b = *it;
+
     crc ^= std::to_integer<uint8_t>(b);
 
     for (size_t i = 0; i < 8; ++i) {
       if (crc & 0x80) {
-        crc = (crc << 1) ^ 0x07; // Polynomial x^8 + x^2 + x + 1
+        crc = (crc << 1) ^ POLYNOMIAL; // Polynomial x^8 + x^2 + x + 1
       } else {
         crc <<= 1;
       }
@@ -412,8 +420,10 @@ uint8_t compute(const std::vector<std::byte> &data) {
   return crc;
 }
 
-bool verify(const std::vector<std::byte> &data, const uint8_t expected_crc) {
-  return compute(data) == expected_crc;
+bool verify(const std::vector<std::byte>::const_iterator begin,
+            const std::vector<std::byte>::const_iterator end,
+            const uint8_t expected_crc) {
+  return compute(begin, end) == expected_crc;
 }
 
 } // namespace crc8
@@ -478,11 +488,11 @@ private:
 };
 
 enum class PacketType : uint16_t {
-  HostHello = 0x01,
-  DeviceHello = 0x02,
-  HostAck = 0x03,
-  Data = 0x04,
-  Error = 0x05,
+  HostHello = 0x0001,
+  DeviceHello = 0x0002,
+  HostAck = 0x0003,
+  Data = 0x0004,
+  Error = 0x0005,
 };
 
 enum class ReservedErrorCode : uint16_t {
@@ -500,14 +510,14 @@ public:
       : type_(type), payload_(std::move(payload)) {}
 
   static std::optional<Packet> parse(std::vector<std::byte> &data) {
-    if (data.size() < 3) // Minimum size: 1 byte type + 2 bytes payload
+    if (data.size() < 3) // Minimum size: 1 byte crc + 2 byte type
       return std::nullopt;
 
     const PacketDecoder decoder{data};
 
     const auto crc = decoder.pop_byte();
 
-    if (!crc8::verify(data, std::to_integer<uint8_t>(crc)))
+    if (!crc8::verify(data.cbegin() + 1, data.cend(), std::to_integer<uint8_t>(crc)))
       return std::nullopt;
 
     const auto type = decoder.pop_uint16();
@@ -515,7 +525,7 @@ public:
 
     std::vector<std::byte> payload{size};
 
-    std::copy(data.begin(), data.end(), payload.begin());
+    std::copy(data.cbegin(), data.cend(), payload.begin());
 
     data.clear();
 
@@ -532,7 +542,7 @@ public:
       encoder.push_bytes(payload_.data(), payload_.size());
     }
 
-    const auto crc = crc8::compute(raw_payload);
+    const auto crc = crc8::compute(raw_payload.cbegin(), raw_payload.cend());
 
     std::vector<std::byte> packet_data;
     packet_data.reserve(1 + raw_payload.size() + 1);
@@ -576,17 +586,13 @@ public:
 
 namespace capability {
 
-class ICapability {
+class ICapability : public ISerializable, public IDeserializable {
 public:
   virtual ~ICapability() = default;
 
   [[nodiscard]] virtual uint16_t id() const = 0;
 
   [[nodiscard]] virtual uint16_t min_size() const = 0;
-
-  virtual void serialize(const PacketEncoder &encoder) const = 0;
-
-  virtual bool deserialize(const PacketDecoder &decoder) = 0;
 };
 
 } // namespace capability
@@ -615,12 +621,20 @@ public:
 
       current_handshake = HandshakeStage::None;
 
+      wait_connection = true;
+
       return;
     };
+
+    wait_connection = false;
+
+    if (Serial.available() == 0) return;
 
     receive_to_rx_buf();
 
     const auto status = cobs::decode(rx_buffer, rx_cobs);
+
+    rx_buffer.clear();
 
     if (status == cobs::DecodeStatus::Error) {
       // COBS error, clear packet buffer
@@ -637,10 +651,37 @@ public:
 
     rx_packet = Packet::parse(rx_cobs);
 
+    rx_cobs.clear();
+
     if (!rx_packet) {
-      // Packet parse error, clear packet buffer
-      if (!rx_cobs.empty())
-        rx_cobs.clear();
+      return;
+    }
+
+    const auto type = static_cast<PacketType>(rx_packet->type());
+
+    if (type == PacketType::Error) {
+      const auto &payload = rx_packet->payload();
+
+      if (payload.size() < 2) {
+        // Malformed error packet
+        return;
+      }
+
+      const PacketDecoder decoder{rx_packet->payload()};
+
+      const auto error_code = decoder.pop_uint16();
+      const auto it = find_data_callback(error_code, error_callbacks);
+
+      if (it == error_callbacks.end()) {
+        // No callback registered for this error code
+        return;
+      }
+
+      std::vector<std::byte> data{payload.size()};
+
+      std::copy(payload.begin(), payload.end(), data.begin());
+
+      it->second(data);
 
       return;
     }
@@ -648,23 +689,27 @@ public:
     if (!is_connected()) {
       if (!process_handshake()) {
         send_error(
-            static_cast<uint16_t>(ReservedErrorCode::HandshakeNotCompleted));
+          static_cast<uint16_t>(ReservedErrorCode::HandshakeNotCompleted)
+        );
+      }
+
+      // Set handshake status led
+      if (current_handshake == HandshakeStage::Completed) {
+        digitalWrite(LED_BUILTIN, LOW);
+      } else if (current_handshake != HandshakeStage::None) {
+        digitalWrite(LED_BUILTIN, HIGH);
       }
 
       return;
     }
 
-    const auto type = static_cast<PacketType>(rx_packet->type());
-
-    // Process packet
-    switch (type) {
-    case PacketType::Data: {
+    if (type == PacketType::Data) {
       const auto &payload = rx_packet->payload();
 
       if (payload.size() < 2) {
         send_error(static_cast<uint16_t>(ReservedErrorCode::MalformedPacket));
 
-        break;
+        return;
       }
 
       const PacketDecoder decoder{rx_packet->payload()};
@@ -675,7 +720,7 @@ public:
 
       if (it == data_callbacks.end()) {
         // No callback registered for this data type
-        break;
+        return;
       }
 
       std::vector<std::byte> data{payload.size()};
@@ -683,51 +728,16 @@ public:
       std::copy(payload.begin(), payload.end(), data.begin());
 
       it->second(data);
-
-      break;
-    }
-
-    case PacketType::Error: {
-      const auto &payload = rx_packet->payload();
-
-      if (payload.size() < 2) {
-        // Malformed error packet
-        break;
-      }
-
-      const PacketDecoder decoder{rx_packet->payload()};
-
-      const auto error_code = decoder.pop_uint16();
-
-      const auto it = find_data_callback(error_code, error_callbacks);
-
-      if (it == error_callbacks.end()) {
-        // No callback registered for this error code
-        break;
-      }
-
-      std::vector<std::byte> data{payload.size()};
-
-      std::copy(payload.begin(), payload.end(), data.begin());
-
-      it->second(data);
-
-      break;
-    }
-
-    default:
+    } else {
       send_error(static_cast<uint16_t>(ReservedErrorCode::UnknownPacketType));
-      break;
     }
   }
 
   // Handshake
 
-  void add_capability(capability::ICapability *host_cap, const capability::ICapability *device_cap) {
-    if (!host_cap || !device_cap) return;
-
-    host_capabilities.push_back(host_cap);
-    device_capabilities.push_back(device_cap);
+  void add_capability(capability::ICapability &host_cap, const capability::ICapability &device_cap) {
+    host_capabilities.push_back(std::ref(host_cap));
+    device_capabilities.push_back(std::cref(device_cap));
   }
 
   // Receiving
@@ -857,6 +867,10 @@ public:
     send_packet(packet);
   }
 
+  [[nodiscard]] bool is_waiting_connection() const {
+    return wait_connection;
+  }
+
   [[nodiscard]] bool is_connected() const {
     return current_handshake == HandshakeStage::Completed;
   }
@@ -882,8 +896,9 @@ private:
   static data_callbacks_t::iterator
   find_data_callback(const uint16_t type, data_callbacks_t &callbacks) {
     const auto it = std::lower_bound(
-        callbacks.begin(), callbacks.end(), type,
-        [](const auto &pair, const auto &value) { return pair.first < value; });
+      callbacks.begin(), callbacks.end(), type,
+      [](const auto &pair, const auto &value) { return pair.first < value; }
+    );
 
     if (it == callbacks.end() || it->first != type) {
       return callbacks.end();
@@ -896,9 +911,10 @@ private:
   std::vector<std::byte> rx_cobs;
   std::optional<Packet> rx_packet;
 
+  bool wait_connection = false;
   HandshakeStage current_handshake = HandshakeStage::None;
-  std::vector<capability::ICapability *> host_capabilities;
-  std::vector<const capability::ICapability *> device_capabilities;
+  std::vector<std::reference_wrapper<capability::ICapability>> host_capabilities;
+  std::vector<std::reference_wrapper<const capability::ICapability>> device_capabilities;
 
   data_callbacks_t data_callbacks;
   data_callbacks_t error_callbacks;
@@ -944,28 +960,26 @@ private:
       const auto cap_type = decoder.pop_uint16();
       const auto cap_size = decoder.pop_uint16();
 
-      if (cap_size > 0) {
-        if (payload.size() < cap_size)
-          return ReservedErrorCode::MalformedPacket;
+      if (payload.size() < cap_size)
+        return ReservedErrorCode::MalformedPacket;
 
-        auto cap_data = decoder.pop_bytes(cap_size);
+      auto cap_data = decoder.pop_bytes(cap_size);
 
-        const auto cap_it = std::find_if(
-          host_capabilities.begin(), host_capabilities.end(),
-          [cap_type](const auto &cap) { return cap->id() == cap_type; }
-        );
+      const auto cap_it = std::find_if(
+        host_capabilities.cbegin(), host_capabilities.cend(),
+        [cap_type](const auto &cap) { return cap.get().id() == cap_type; }
+      );
 
-        if (cap_it == host_capabilities.end())
-          return ReservedErrorCode::MissingCapabilities;
+      if (cap_it == host_capabilities.cend())
+        return ReservedErrorCode::MissingCapabilities;
 
-        const auto cap = *cap_it;
+      auto &cap = cap_it->get();
 
-        if (cap->min_size() > cap_size)
-          return ReservedErrorCode::MalformedPacket;
+      if (cap.min_size() > cap_size)
+        return ReservedErrorCode::MalformedPacket;
 
-        if (!cap->deserialize(PacketDecoder{cap_data}))
-          return ReservedErrorCode::MalformedPacket;
-      }
+      if (!cap.deserialize(PacketDecoder{cap_data}))
+        return ReservedErrorCode::MalformedPacket;
     }
 
     return std::nullopt;
@@ -982,13 +996,15 @@ private:
       encoder.push_number(device_id);
       encoder.push_number(static_cast<uint8_t>(device_capabilities.size()));
 
-      for (const auto &cap : device_capabilities) {
+      for (auto it = device_capabilities.begin(); it != device_capabilities.end(); ++it) {
+        const auto &cap = it->get();
+
         std::vector<std::byte> cap_data;
-        PacketEncoder encoder{cap_data};
+        PacketEncoder cap_encoder{cap_data};
 
-        cap->serialize(encoder);
+        cap.serialize(cap_encoder);
 
-        encoder.push_number(cap->id());
+        encoder.push_number(cap.id());
         encoder.push_number(static_cast<uint16_t>(cap_data.size()));
         encoder.push_bytes(cap_data.data(), cap_data.size());
       }
@@ -1143,7 +1159,10 @@ bool get_n_bit(const uint8_t flags, const size_t n) {
   return (flags >> n) & 0b1;
 }
 
-void process_data_set(const uint8_t flags, const PacketDecoder &decoder) {
+static Tone tone_data;
+static RGBColor color_data;
+
+void process_data(const uint8_t flags, const PacketDecoder &decoder) {
   // 0-1 bits are currently unused
 
   if (get_n_bit(flags, 2)) {
@@ -1155,7 +1174,6 @@ void process_data_set(const uint8_t flags, const PacketDecoder &decoder) {
 
   if (get_n_bit(flags, 3)) {
     // Tone
-    Tone tone_data;
 
     if (!tone_data.deserialize(decoder)) {
       comm.send_error(
@@ -1185,7 +1203,6 @@ void process_data_set(const uint8_t flags, const PacketDecoder &decoder) {
 
   if (get_n_bit(flags, 5)) {
     // RGB LED
-    RGBColor color_data;
 
     if (!color_data.deserialize(decoder)) {
       comm.send_error(
@@ -1199,11 +1216,31 @@ void process_data_set(const uint8_t flags, const PacketDecoder &decoder) {
   }
 }
 
+class FraiselaitDeviceCapability : public capability::ICapability {
+public:
+  FraiselaitDeviceCapability() = default;
+
+  [[nodiscard]] uint16_t id() const override { return 0x0040; }
+
+  [[nodiscard]] uint16_t min_size() const override { return 0; }
+
+  void serialize(const PacketEncoder &encoder) const override {
+  }
+
+  bool deserialize(const PacketDecoder &encoder) override {
+    return true;
+  }
+};
+
+FraiselaitDeviceCapability fraiselaitDeviceCap;
+
 void setup() {
   // 115200 bps, 8 data bits, no parity, 1 stop bit
   Serial.begin(115200, SERIAL_8N1);
 
   wait_for_serial();
+
+  comm.add_capability(fraiselaitDeviceCap, fraiselaitDeviceCap);
 
   comm.subscribe_data(
     static_cast<uint16_t>(DataTypes::CommandDataGetImmediate),
@@ -1233,7 +1270,7 @@ void setup() {
       const PacketDecoder decoder{payload};
       const auto flags = decoder.pop_uint8();
 
-      process_data_set(flags, decoder);
+      process_data(flags, decoder);
     }
   );
 }
@@ -1241,15 +1278,16 @@ void setup() {
 void loop() {
   comm.loop();
 
-  wait_for_serial();
+  if (comm.is_waiting_connection())
+    wait_for_serial();
+
+  if (!comm.is_connected())
+    return;
 
   if (send_data_forever) {
     send_data();
   }
 }
-
-Tone tone_data;
-RGBColor change_color_data;
 
 void smooth_analog_values() {
   static size_t light_strength_read_index = 0;

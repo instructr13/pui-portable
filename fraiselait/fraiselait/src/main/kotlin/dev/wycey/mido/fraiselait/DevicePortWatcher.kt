@@ -1,8 +1,7 @@
 package dev.wycey.mido.fraiselait
 
+import jssc.SerialPortList
 import kotlinx.coroutines.*
-import processing.core.PApplet
-import processing.serial.Serial
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object DevicePortWatcher {
@@ -38,18 +37,16 @@ internal object DevicePortWatcher {
       _started.set(value)
     }
 
-  fun start(applet: PApplet) {
+  fun start() {
     if (started) {
       return
     }
-
-    applet.registerMethod("dispose", this)
 
     CoroutineScope(coroutineContext).launch {
       started = true
 
       while (true) {
-        val newSerialList = Serial.list()
+        val newSerialList = SerialPortList.getPortNames()
 
         if (!newSerialList.contentEquals(ports)) {
           ports = newSerialList
@@ -72,5 +69,9 @@ internal object DevicePortWatcher {
 
   fun listen(listener: (Array<String>) -> Unit) {
     listeners.add(listener)
+  }
+
+  fun unlisten(listener: (Array<String>) -> Unit) {
+    listeners.remove(listener)
   }
 }

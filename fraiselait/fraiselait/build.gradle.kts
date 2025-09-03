@@ -1,23 +1,12 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
   id("dev.wycey.mido.processing-module")
 }
 
 group = "$group.fraiselait"
-version = "2.1.0"
-
-val processingSerial = files("../../lib/org.processing-serial-4.4.jar")
+version = "2.2.0"
 
 dependencies {
   implementation(libs.kotlinx.coroutines.core)
 
-  shadow(processingSerial)
-  shadow(libs.bundles.processing.serial)
-}
-
-tasks.withType<ShadowJar> {
-  dependencies {
-    exclude(dependency(libs.processing.core.get()))
-  }
+  implementation(libs.jssc)
 }

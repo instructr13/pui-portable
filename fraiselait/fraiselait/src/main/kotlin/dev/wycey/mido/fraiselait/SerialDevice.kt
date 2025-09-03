@@ -1,573 +1,543 @@
 package dev.wycey.mido.fraiselait
 
-import dev.wycey.mido.fraiselait.commands.Command
-import dev.wycey.mido.fraiselait.constants.*
-import dev.wycey.mido.fraiselait.coroutines.sync.newCondition
-import dev.wycey.mido.fraiselait.models.DeviceInformation
-import dev.wycey.mido.fraiselait.models.DeviceState
-import dev.wycey.mido.fraiselait.models.NonNullPinInformation
-import dev.wycey.mido.fraiselait.util.Disposable
-import dev.wycey.mido.fraiselait.util.OperatingSystem
-import dev.wycey.mido.fraiselait.util.PrePhase
-import dev.wycey.mido.fraiselait.util.getOperatingSystem
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import processing.core.PApplet
-import processing.serial.Serial
+import dev.wycey.mido.fraiselait.capability.BaseCapability
+import dev.wycey.mido.fraiselait.cobs.COBS
+import dev.wycey.mido.fraiselait.models.Serializable
+import dev.wycey.mido.fraiselait.packet.Packet
+import dev.wycey.mido.fraiselait.packet.PacketType
+import dev.wycey.mido.fraiselait.packet.ReservedErrorCode
+import dev.wycey.mido.fraiselait.util.VariableByteBuffer
+import jssc.*
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
+import java.nio.ByteOrder
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-public class SerialDevice
+public open class SerialDevice
   @JvmOverloads
   constructor(
-    parent: PApplet,
     public val serialRate: Int,
-    private val portSelection: SerialPortSelection = SerialPortSelection.Automatic
-  ) : Disposable,
-    PrePhase {
+    private val portSelection: SerialPortSelection = SerialPortSelection.FirstAvailable,
+    hostCapabilities: List<BaseCapability> = listOf(),
+    connectImmediately: Boolean = true
+  ) {
     public companion object {
+      public const val VERSION: Int = 400
+
       @JvmStatic
-      public fun list(): Array<String> = Serial.list()
+      public fun list(): Array<String> = SerialPortList.getPortNames()
     }
 
-    private val lock = Mutex()
-    private val runningCondition = lock.newCondition()
+    private val onStatusChangeCallbacks = mutableListOf<(ConnectionStatus) -> Unit>()
+    private val onDisposeCallbacks = mutableListOf<() -> Unit>()
+    private val dataCallbacks = mutableListOf<Pair<UShort, (ByteBuffer) -> Unit>>()
+    private val errorCallbacks = mutableListOf<Pair<UShort, (ByteBuffer) -> Unit>>()
 
-    public var id: String? = null
-      private set
-
-    public var pins: NonNullPinInformation? = null
+    @Volatile
+    public var status: ConnectionStatus = ConnectionStatus.NOT_CONNECTED
       private set(value) {
-        if (field == value) return
-
         field = value
 
-        pinsListeners.forEach { it(value) }
+        onStatusChangeCallbacks.forEach { it(value) }
+
+        if (value == ConnectionStatus.DISPOSED) {
+          onDisposeCallbacks.forEach { it() }
+        }
+
+        if (value == ConnectionStatus.NOT_CONNECTED) {
+          id = null
+        }
       }
 
-    private var _state = AtomicReference<DeviceState?>(null)
-    public var state: DeviceState?
-      get() = _state.get()
-      private set(value) {
-        if (_state.get() == value) return
+    private val hostCapabilities = hostCapabilities.toMutableList()
+    private val backingDeviceCapabilities = mutableListOf<BaseCapability>()
 
-        _state.set(value)
+    public val deviceCapabilities: List<BaseCapability>
+      get() = backingDeviceCapabilities.toList()
 
-        stateListeners.forEach { it(value) }
-      }
+    private inner class Listener : SerialPortEventListener {
+      private val rxBuffer = VariableByteBuffer(ByteOrder.BIG_ENDIAN)
+      private val rxCOBSBuffer = VariableByteBuffer(ByteOrder.BIG_ENDIAN)
+      private var rxPacket: Packet? = null
 
-    internal inner class SerialProxy :
-      PApplet(),
-      SerialReceiver {
-      internal val enableSerialEvent = AtomicBoolean(false)
-
-      var waitForNewResponse: Boolean = true
-      var response: UByte = 0u
-
-      override fun serialEvent(serial: Serial) {
+      override fun serialEvent(e: SerialPortEvent?) {
         try {
-          if (serial.available() == 0 || !enableSerialEvent.get()) return
+          if (e == null || !e.isRXCHAR) return
 
-          if (waitForNewResponse) {
-            val startingResponse = serial.read()
+          receiveToRXBuffer(e)
 
-            if (startingResponse == -1) return
+          val (cobsStatus, cobsArray) = COBS.decode(rxBuffer.array)
 
-            response = startingResponse.toUByte()
-            waitForNewResponse = false
+          rxBuffer.clear()
 
-            when (startingResponse.toUByte()) {
-              0u.toUByte() -> {
-                waitForNewResponse = true
-              }
+          rxCOBSBuffer.put(cobsArray)
 
-              RESPONSE_DATA_START -> {
-                serial.buffer(1 + 4 + 4)
-              }
+          if (cobsStatus == COBS.DecodeStatus.ERROR) {
+            rxCOBSBuffer.clear()
 
-              RESPONSE_RESERVED_ERROR -> {
-                serial.buffer(1)
-              }
+            return
+          }
 
-              else -> {
-                println("Unknown response: $startingResponse")
+          if (cobsStatus == COBS.DecodeStatus.IN_PROGRESS) {
+            return
+          }
 
-                waitForNewResponse = true
-              }
+          rxCOBSBuffer.flip()
+
+          rxPacket = Packet.parse(rxCOBSBuffer)
+
+          rxCOBSBuffer.clear()
+
+          if (rxPacket == null) {
+            return
+          }
+
+          val type = rxPacket!!.type
+
+          if (type == PacketType.ERROR) {
+            val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
+
+            if (payload.remaining() < 2) {
+              return
+            }
+
+            val buffer = payload.getShort().toUShort()
+
+            ReservedErrorCode.fromCode(buffer)?.let {
+              throw IllegalStateException("Received error from device: $it")
+            }
+
+            val errorData = ByteArray(payload.remaining())
+
+            payload.get(errorData)
+
+            errorCallbacks.filter { it.first == buffer }.forEach {
+              it.second(ByteBuffer.wrap(errorData).order(ByteOrder.BIG_ENDIAN))
+            }
+          }
+
+          if (status == ConnectionStatus.CONNECTING) {
+            processHandshake()?.let {
+              sendError(it.code)
+
+              throw IllegalStateException("Handshake failed: $it")
+            } ?: run {
+              status = ConnectionStatus.CONNECTED
             }
 
             return
           }
 
-          waitForNewResponse = true
+          when (type) {
+            PacketType.DATA -> {
+              val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
 
-          when (response) {
-            RESPONSE_DATA_START -> {
-              val dataBytes = readBytesNonSuspend(serial, 1 + 4 + 4)
-              val tactSwitch = dataBytes[0] > 0
-              val lightStrength = ByteBuffer.wrap(dataBytes.copyOfRange(1, 5)).int
-              val coreTemperature = ByteBuffer.wrap(dataBytes.copyOfRange(5, 9)).float
+              if (payload.remaining() < 2) {
+                sendError(ReservedErrorCode.MALFORMED_PACKET.code)
 
-              state = DeviceState(tactSwitch, lightStrength, coreTemperature)
-            }
+                return
+              }
 
-            RESPONSE_RESERVED_ERROR -> {
-              val code = readByteNonSuspend(serial).toInt()
+              val dataType = payload.getShort().toUShort()
 
-              if (code == 0x00) {
-                println("Error received: Deserialization error")
-              } else if (code == 0x01) {
-                println("Error received: pin collision")
+              val data = ByteArray(payload.remaining())
+
+              payload.get(data)
+
+              dataCallbacks.filter { it.first == dataType }.forEach {
+                it.second(ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN))
               }
             }
-          }
 
-          serial.buffer(1)
+            else -> {
+              sendError(ReservedErrorCode.UNKNOWN_PACKET_TYPE.code)
+            }
+          }
         } catch (e: Exception) {
-          println("Error in serial event:")
+          print("Error in serial event: ")
+
           e.printStackTrace()
+
+          sendError(ReservedErrorCode.INTERNAL_ERROR.code)
+
+          disconnect()
         }
       }
+
+      private fun receiveToRXBuffer(e: SerialPortEvent) {
+        val avail = e.eventValue
+
+        rxBuffer.reserve(rxBuffer.size + avail)
+
+        rxBuffer.put(serial!!.readBytes(avail))
+      }
+
+      private fun receiveDeviceHello(payload: ByteArray): Boolean {
+        val payload = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
+
+        if (payload.remaining() < 5) {
+          throw IllegalStateException("Device Hello payload too short")
+        }
+
+        val deviceId = payload.getInt()
+
+        id = String.format("%08x", deviceId)
+
+        val capabilityCount = payload.get().toInt() and 0xFF
+
+        for (i in 0 until capabilityCount) {
+          if (payload.remaining() < 4) {
+            throw IllegalStateException("Device Hello payload too short for capability $i")
+          }
+
+          val capabilityId = payload.getShort()
+          val capabilitySize = payload.getShort().toUShort().toInt()
+
+          if (payload.remaining() < capabilitySize) {
+            throw IllegalStateException("Device Hello payload too short for capability data $i")
+          }
+
+          val capabilityData = ByteArray(capabilitySize)
+
+          payload.get(capabilityData)
+
+          val capability = backingDeviceCapabilities.find { it.id == capabilityId } ?: continue
+
+          if (!capability.fromByteArray(capabilityData)) {
+            throw IllegalStateException("Failed to parse capability data for capability $i")
+          }
+        }
+
+        return true
+      }
+
+      private fun processHandshake(): ReservedErrorCode? {
+        val packet = rxPacket ?: throw IllegalStateException("No packet to process")
+
+        if (packet.type != PacketType.DEVICE_HELLO) return ReservedErrorCode.HANDSHAKE_NOT_COMPLETED
+
+        if (!receiveDeviceHello(packet.payload)) return ReservedErrorCode.MISSING_CAPABILITIES
+
+        sendHostAck()
+
+        return null
+      }
     }
+
+    private var serial: SerialPort? = null
 
     public var port: String? = if (portSelection is SerialPortSelection.Manual) portSelection.port else null
       set(value) {
-        if (value == null) {
-          if (serial != null) disconnect(serial!!)
+        if (value == field) return
 
-          serial = null
+        disconnect()
 
-          field = null
-
-          return
+        if (value != null && value !in list()) {
+          throw IllegalArgumentException("Port '$value' not found")
         }
 
-        if (value !in list()) {
-          throw IllegalArgumentException("Port $value is not available")
+        try {
+          serial?.closePort()
+        } catch (_: SerialPortException) {
         }
 
-        serial?.stop()
         serial = null
-
         field = value
 
-        refreshSerial()
-      }
-
-    private val maxRetries = 10
-    private var errorCatchRetries = 0
-
-    private fun disconnect(serial: Serial) {
-      try {
-        proxy.enableSerialEvent.set(false)
-        serial.write(COMMAND_DATA_GET_LOOP_OFF.toInt())
-      } catch (_: RuntimeException) {
-        // Ignore I/O exceptions
-      }
-
-      pins = null
-      state = null
-    }
-
-    private fun readByteNonSuspend(serial: Serial): UByte {
-      var data: Int
-
-      do {
-        data = serial.read()
-      } while (data < 0)
-
-      return data.toUByte()
-    }
-
-    private fun readBytesNonSuspend(
-      serial: Serial,
-      byteCount: Int
-    ): ByteArray {
-      var data = ByteArray(byteCount)
-
-      while (serial.available() < byteCount) {
-        Thread.sleep(1)
-      }
-
-      var res: Int
-
-      do {
-        res = serial.readBytes(data)
-      } while (res == 0)
-
-      return data
-    }
-
-    private suspend fun readBytes(
-      serial: Serial,
-      byteCount: Int,
-      timeout: Duration = 100.milliseconds
-    ): ByteArray {
-      val serialRead =
-        CoroutineScope(coroutineContext).async {
-          readBytesNonSuspend(serial, byteCount)
-        }
-
-      return withTimeout(timeout) { serialRead.await() }
-    }
-
-    private fun establishSerialConnection(): Serial? {
-      try {
-        val actualPort = port ?: return null
-
-        val serial = Serial(proxy, actualPort, serialRate)
-
-        serial.buffer(1)
-
-        println("SerialDevice: Established connection with port ${serial.port.portName}")
-
-        negotiateConnection(serial)
-
-        return serial
-      } catch (e: RuntimeException) {
-        if (e.message?.contains("Port not found") == true ||
-          e.message?.contains("Port not opened") == true ||
-          e.message?.contains("Port is busy") == true
-        ) {
-          port = null
-
-          if (errorCatchRetries < maxRetries) {
-            errorCatchRetries++
-
-            Thread.sleep(100 * errorCatchRetries.toLong())
-
-            return establishSerialConnection()
-          }
-
-          errorCatchRetries = 0
-        }
-
-        if (e.message?.startsWith("Error opening serial port") == true) {
-          if (getOperatingSystem() == OperatingSystem.LINUX) {
-            if (errorCatchRetries < maxRetries) {
-              errorCatchRetries++
-
-              Thread.sleep(100 * errorCatchRetries.toLong())
-
-              return establishSerialConnection()
-            }
-
-            println("Error opening serial port, giving up")
-
-            errorCatchRetries = 0
-          }
-
-          port = null
-        }
-
-        throw e
-      }
-    }
-
-    private fun negotiateConnection(serial: Serial) {
-      var retries = 0
-
-      CoroutineScope(coroutineContext).launch retry@{
-        while (true) {
-          // If the device is still sending data, send disconnect command
-          if (serial.available() > 0) {
-            println("Device is still sending data, trying to disconnect")
-
-            disconnect(serial)
-
-            delay(40)
-
-            serial.clear()
-
-            retries++
-
-            if (retries >= 3) {
-              throw RuntimeException("Failed to disconnect from device")
-            }
-
-            continue // Retry negotiation
-          }
-
-          // Flush all data before sending the negotiation data
-          serial.clear()
-
-          serial.write(COMMAND_DEVICE_INFO_GET.toInt())
-
-          val deviceInformation =
-            try {
-              DeviceInformation.fromData(readBytes(serial, 2 + 4 + 6, 2.seconds)) // version + deviceId + pins
-            } catch (e: Exception) {
-              serial.clear()
-
-              println("Failed to deserialize device information, retrying negotiation")
-
-              delay(2.seconds)
-
-              retries++
-
-              if (retries >= 3) {
-                throw RuntimeException("Failed to negotiate with device").initCause(e)
-              }
-
-              continue
-            }
-
-          println("Device information: $deviceInformation")
-
-          if (deviceInformation.version < PROTOCOL_VERSION.toInt()) {
-            throw RuntimeException(
-              "Incompatible protocol version: Expected $PROTOCOL_VERSION, got ${deviceInformation.version}"
-            )
-          }
-
-          id = deviceInformation.deviceId
-          pins = deviceInformation.pins.toNonNullPinInformation()
-
-          serial.write(COMMAND_DATA_GET_LOOP_ON.toInt())
-
-          proxy.enableSerialEvent.set(true)
-          phase = SerialDevicePhase.RUNNING
-
-          break
-        }
-      }
-    }
-
-    private val commandChannel = Channel<Command>(UNLIMITED)
-
-    private val proxy = SerialProxy()
-    private val onDisposeCallbacks = mutableListOf<() -> Unit>()
-    private val stateListeners = mutableListOf<(DeviceState?) -> Unit>()
-    private val phaseListeners = mutableListOf<(SerialDevicePhase) -> Unit>()
-    private val pinsListeners = mutableListOf<(NonNullPinInformation?) -> Unit>()
-
-    @Volatile
-    public var phase: SerialDevicePhase = SerialDevicePhase.NEW
-      private set(value) {
-        field = value
-
-        phaseListeners.forEach { it(value) }
-
-        if (value == SerialDevicePhase.RUNNING) {
-          runBlocking {
-            lock.withLock {
-              runningCondition.signalAll()
-            }
-          }
+        if (value != null) {
+          connect()
         }
       }
 
-    private var serial: Serial?
-
-    private val job = SupervisorJob()
-
-    private val exceptionHandler =
-      CoroutineExceptionHandler { _, throwable ->
-        println("SerialDevice error: ${throwable.message}")
-
-        throwable.printStackTrace()
-      }
-
-    private val coroutineContext = Dispatchers.IO + job + exceptionHandler
+    public var id: String? = null
+      private set
 
     init {
-      if (portSelection is SerialPortSelection.Automatic) {
-        DevicePortWatcher.start(parent)
+      if (portSelection is SerialPortSelection.FirstAvailable) {
+        DevicePortWatcher.start()
 
-        DevicePortWatcher.listen {
-          if (port == null) {
-            port = it.firstOrNull()
-          }
-
-          if (port != null && port !in it) {
-            port = null
-          }
-        }
+        DevicePortWatcher.listen(::serialPortListener)
       }
 
-      serial =
-        run {
-          val conn = establishSerialConnection()
-
-          if (conn == null) {
-            phase = SerialDevicePhase.PAUSED
-          }
-
-          conn
-        }
-
-      onDispose {
-        commandChannel.trySend(Command.RESET)
-
-        serial?.stop()
-      }
-
-      CoroutineScope(coroutineContext).launch {
-        val buf = mutableListOf<Command>()
-
-        for (command in commandChannel) {
-          lock.withLock {
-            runningCondition.awaitUntil { phase == SerialDevicePhase.RUNNING }
-          }
-
-          buf.add(command)
-
-          try {
-            if (commandChannel.isEmpty) {
-              lock.withLock {
-                if (serial != null && serial?.active() == true) {
-                  val finalCommand = buf.reduce { acc, other -> acc.merge(other) }
-
-                  serial?.write(finalCommand.toDataBytes())
-
-                  if (finalCommand.pinChanges != null) {
-                    pins = pins?.merge(finalCommand.pinChanges!!)
-                  }
-
-                  buf.clear()
-                }
-              }
-            }
-          } catch (e: NullPointerException) {
-            throw e
-          } catch (_: RuntimeException) {
-            // Nothing happened
-          }
-        }
+      if (connectImmediately) {
+        connect()
       }
     }
 
-    @JvmOverloads
-    public fun send(
-      command: Command,
-      buffered: Boolean = true
+    public fun addCapability(
+      hostCapability: BaseCapability,
+      deviceCapabilityRef: BaseCapability? = null
     ) {
-      if (phase == SerialDevicePhase.DISPOSED) {
-        throw IllegalStateException("Cannot send command to disposed SerialDevice")
+      if (status != ConnectionStatus.NOT_CONNECTED) {
+        throw IllegalStateException("Cannot add capabilities after connecting")
       }
 
-      runBlocking {
-        if (buffered) {
-          commandChannel.send(command)
+      if (hostCapabilities.any { it.id == hostCapability.id }) {
+        throw IllegalArgumentException("Host capability with id ${hostCapability.id} already exists")
+      }
 
-          return@runBlocking
-        }
-
-        lock.withLock {
-          val ok =
-            runningCondition.awaitUntil(3.seconds) { phase == SerialDevicePhase.RUNNING }
-
-          if (!ok) {
-            throw IllegalStateException("SerialDevice was not running after 3 seconds")
-          }
-
-          serial?.write(command.toDataBytes())
-
-          if (command.pinChanges != null) {
-            pins = pins?.merge(command.pinChanges!!)
-          }
-        }
+      hostCapabilities.add(hostCapability)
+      deviceCapabilityRef?.let {
+        backingDeviceCapabilities.add(it)
       }
     }
 
-    public fun refreshSerial(): Unit =
-      runBlocking {
-        lock.withLock {
-          if (serial != null && phase == SerialDevicePhase.RUNNING) {
-            disconnect(serial!!)
-          }
-
-          serial?.stop()
-          serial = null
-          id = null
-          pins = null
-
-          serial = establishSerialConnection()
-
-          if (serial == null) {
-            phase = SerialDevicePhase.PAUSED
-          }
-        }
-      }
-
-    public fun addPhaseChangeListener(callback: (SerialDevicePhase) -> Unit) {
-      phaseListeners.add(callback)
+    public fun onStatusChange(callback: (ConnectionStatus) -> Unit) {
+      onStatusChangeCallbacks.add(callback)
     }
 
-    public fun removePhaseChangeListener(callback: (SerialDevicePhase) -> Unit) {
-      phaseListeners.remove(callback)
-    }
-
-    public fun addPinsChangeListener(callback: (NonNullPinInformation?) -> Unit) {
-      pinsListeners.add(callback)
-    }
-
-    public fun removePinsChangeListener(callback: (NonNullPinInformation?) -> Unit) {
-      pinsListeners.remove(callback)
-    }
-
-    public fun addStateChangeListener(callback: (DeviceState?) -> Unit) {
-      stateListeners.add(callback)
-    }
-
-    public fun removeStateChangeListener(callback: (DeviceState?) -> Unit) {
-      stateListeners.remove(callback)
+    public fun removeOnStatusChange(callback: (ConnectionStatus) -> Unit) {
+      onStatusChangeCallbacks.remove(callback)
     }
 
     public fun onDispose(callback: () -> Unit) {
       onDisposeCallbacks.add(callback)
     }
 
-    override fun pre() {
-      serial?.pre()
+    public fun removeOnDispose(callback: () -> Unit) {
+      onDisposeCallbacks.remove(callback)
     }
 
-    override fun dispose() {
-      if (serial != null) disconnect(serial!!)
+    public fun onData(
+      dataType: UShort,
+      callback: (ByteBuffer) -> Unit
+    ) {
+      dataCallbacks.add(dataType to callback)
+    }
 
-      phase = SerialDevicePhase.DISPOSED
+    public fun removeOnData(
+      dataType: UShort,
+      callback: (ByteBuffer) -> Unit
+    ) {
+      dataCallbacks.remove(dataType to callback)
+    }
 
-      commandChannel.close()
-      onDisposeCallbacks.forEach { it() }
+    public fun onError(
+      errorCode: UShort,
+      callback: (ByteBuffer) -> Unit
+    ) {
+      errorCallbacks.add(errorCode to callback)
+    }
 
-      serial?.dispose()
-      job.cancel()
+    public fun removeOnError(
+      errorCode: UShort,
+      callback: (ByteBuffer) -> Unit
+    ) {
+      errorCallbacks.remove(errorCode to callback)
+    }
+
+    public fun sendData(
+      dataType: UShort,
+      data: ByteArray = byteArrayOf()
+    ) {
+      if (status != ConnectionStatus.CONNECTED) return
+
+      val payload = VariableByteBuffer(ByteOrder.BIG_ENDIAN)
+
+      payload.putShort(dataType.toShort())
+      payload.put(data)
+
+      sendPacket(Packet(PacketType.DATA, payload.array))
+    }
+
+    @JvmOverloads
+    public fun sendData(
+      dataType: Int,
+      data: ByteArray = byteArrayOf()
+    ) {
+      sendData(dataType.toUShort(), data)
+    }
+
+    public fun sendData(
+      dataType: UShort,
+      data: Serializable
+    ) {
+      sendData(dataType, data.toByteArray())
+    }
+
+    public fun sendData(
+      dataType: Int,
+      data: Serializable
+    ) {
+      sendData(dataType.toUShort(), data)
+    }
+
+    public fun sendError(
+      errorCode: UShort,
+      errorData: ByteArray = byteArrayOf()
+    ) {
+      val payload = VariableByteBuffer(ByteOrder.BIG_ENDIAN)
+
+      payload.putShort(errorCode.toShort())
+      payload.put(errorData)
+
+      sendPacket(Packet(PacketType.ERROR, payload.array))
+    }
+
+    @JvmOverloads
+    public fun sendError(
+      errorCode: Int,
+      errorData: ByteArray = byteArrayOf()
+    ) {
+      sendError(errorCode.toUShort(), errorData)
+    }
+
+    public fun sendError(
+      errorCode: UShort,
+      errorData: Serializable
+    ) {
+      sendError(errorCode, errorData.toByteArray())
+    }
+
+    public fun sendError(
+      errorCode: Int,
+      errorData: Serializable
+    ) {
+      sendError(errorCode.toUShort(), errorData)
+    }
+
+    public fun connect() {
+      if (status == ConnectionStatus.DISPOSED) {
+        throw IllegalStateException("Device is disposed")
+      }
+
+      if (status == ConnectionStatus.CONNECTED || status == ConnectionStatus.CONNECTING) {
+        return
+      }
+
+      if (serial == null) {
+        serial = createSerial()
+
+        if (serial == null) {
+          status = ConnectionStatus.NOT_CONNECTED
+
+          return
+        }
+      }
+
+      serial?.addEventListener(Listener(), SerialPort.MASK_RXCHAR)
+      serial?.setDTR(true)
+
+      sendHostHello()
+
+      status = ConnectionStatus.CONNECTING
+    }
+
+    public fun disconnect() {
+      if (status == ConnectionStatus.DISPOSED) {
+        throw IllegalStateException("Device is disposed")
+      }
+
+      serial?.setDTR(false)
+      serial?.removeEventListener()
+
+      status = ConnectionStatus.NOT_CONNECTED
+      id = null
+    }
+
+    public fun dispose() {
+      DevicePortWatcher.unlisten(::serialPortListener)
+
+      status = ConnectionStatus.DISPOSED
+
+      try {
+        serial?.closePort()
+      } catch (_: SerialPortException) {
+      }
+
+      onStatusChangeCallbacks.clear()
+      onDisposeCallbacks.clear()
+
+      id = null
+      serial = null
+    }
+
+    private fun serialPortListener(serials: Array<String>) {
+      if (port != null && port !in serials) {
+        port = null
+      }
+
+      if (port == null && portSelection is SerialPortSelection.FirstAvailable) {
+        port = serials.firstOrNull()
+      }
+    }
+
+    private fun createSerial(): SerialPort? {
+      val actualPort = port ?: return null
+      val serial = SerialPort(actualPort)
+
+      try {
+        serial.openPort()
+        serial.setParams(
+          serialRate,
+          SerialPort.DATABITS_8,
+          SerialPort.STOPBITS_1,
+          SerialPort.PARITY_NONE
+        )
+        serial.setDTR(false)
+      } catch (e: Exception) {
+        println("Failed to open serial port '$actualPort': $e")
+
+        e.printStackTrace()
+
+        serial.closePort()
+
+        status = ConnectionStatus.NOT_CONNECTED
+
+        return null
+      }
+
+      return serial
+    }
+
+    private fun sendPacket(packet: Packet) {
+      val rawData = packet.encode()
+      val cobsData = COBS.encode(rawData)
+
+      serial?.writeBytes(cobsData)
+    }
+
+    private fun sendHostHello() {
+      val payload = VariableByteBuffer(ByteOrder.BIG_ENDIAN)
+
+      payload.putShort(VERSION.toShort())
+      payload.put(hostCapabilities.size.toByte())
+
+      hostCapabilities.forEach {
+        payload.putShort(it.id)
+
+        val serializedCapability = it.toByteArray()
+
+        payload.putShort(serializedCapability.size.toShort())
+        payload.put(it.toByteArray())
+      }
+
+      sendPacket(Packet(PacketType.HOST_HELLO, payload.array))
+    }
+
+    private fun sendHostAck() {
+      sendPacket(Packet(PacketType.HOST_ACK))
     }
 
     override fun equals(other: Any?): Boolean {
       if (this === other) return true
-      if (javaClass != other?.javaClass) return false
-
-      other as SerialDevice
+      if (other !is SerialDevice) return false
 
       if (serialRate != other.serialRate) return false
-      if (portSelection != other.portSelection) return false
-      if (runningCondition != other.runningCondition) return false
-      if (id != other.id) return false
-      if (pins != other.pins) return false
+      if (status != other.status) return false
       if (port != other.port) return false
+      if (id != other.id) return false
 
       return true
     }
 
     override fun hashCode(): Int {
       var result = serialRate
-      result = 31 * result + portSelection.hashCode()
-      result = 31 * result + runningCondition.hashCode()
-      result = 31 * result + (id?.hashCode() ?: 0)
-      result = 31 * result + (pins?.hashCode() ?: 0)
+
+      result = 31 * result + status.hashCode()
       result = 31 * result + (port?.hashCode() ?: 0)
+      result = 31 * result + (id?.hashCode() ?: 0)
+
       return result
     }
 
-    override fun toString(): String = "SerialDevice(id=$id,rate=$serialRate,phase=$phase,state=$state)"
+    override fun toString(): String = "SerialDevice(id=$id, port=$port, rate=$serialRate, status=$status)"
   }

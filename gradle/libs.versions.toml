@@ -17,7 +17,7 @@ processing = "4.4.6"
 colormath = "3.6.+"
 
 # jssc
-jssc = "2.9.+"
+jssc = "2.10.+"
 
 # uibooster
 uibooster = "1.21.+"
@@ -44,8 +44,3 @@ jssc = { module = "io.github.java-native:jssc", version.ref = "jssc" }
 
 # uibooster
 uibooster = { module = "com.github.Milchreis:UiBooster", version.ref = "uibooster" }
-
-[bundles]
-
-# processing
-processing-serial = ["jssc"]

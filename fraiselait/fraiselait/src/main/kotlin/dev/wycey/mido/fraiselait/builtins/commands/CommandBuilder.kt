@@ -1,13 +1,9 @@
-package dev.wycey.mido.fraiselait.commands
-
-import dev.wycey.mido.fraiselait.models.JVMPinInformation
-import dev.wycey.mido.fraiselait.models.PinInformation
+package dev.wycey.mido.fraiselait.builtins.commands
 
 public class CommandBuilder {
   internal var changeColor: Commands.ChangeColor? = null
   internal var changeLedBuiltin: Boolean? = null
   internal var tone: Commands.Tone? = null
-  internal var pins: PinInformation? = null
 
   public var flags: UByte =
     0u // LSB First, 1st=restoreDefaultPins, 2nd=changePin, 3rd=noTone, 4th=tone, 5th=changeLedBuiltin, 6th=changeColor
@@ -27,8 +23,6 @@ public class CommandBuilder {
     setFlagFor(0)
 
     if (hasFlagFor(1)) {
-      pins = null
-
       unsetFlagFor(1)
     }
 
@@ -37,27 +31,6 @@ public class CommandBuilder {
 
   public fun unsetRestoreDefaultPins(): CommandBuilder {
     unsetFlagFor(0)
-
-    return this
-  }
-
-  public fun changePin(pins: PinInformation): CommandBuilder {
-    this.pins = pins
-    setFlagFor(1)
-
-    return this
-  }
-
-  public fun changePin(pins: JVMPinInformation): CommandBuilder {
-    this.pins = PinInformation.fromJVMPinInformation(pins)
-    setFlagFor(1)
-
-    return this
-  }
-
-  public fun unsetChangePin(): CommandBuilder {
-    pins = null
-    unsetFlagFor(1)
 
     return this
   }
@@ -147,7 +120,6 @@ public class CommandBuilder {
     val newChangeColor = other.changeColor ?: changeColor
     val newChangeLedBuiltin = other.changeLedBuiltin ?: changeLedBuiltin
     val newTone = other.tone ?: tone
-    val newPins = other.pins ?: pins
 
     val newFlags = flags or other.flags
 
@@ -155,7 +127,6 @@ public class CommandBuilder {
       changeColor = newChangeColor
       changeLedBuiltin = newChangeLedBuiltin
       tone = newTone
-      pins = newPins
       flags = newFlags
     }
   }
