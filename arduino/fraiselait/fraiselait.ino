@@ -13,6 +13,7 @@
 #include <string>
 
 constexpr uint32_t CUSTOM_DEVICE_ID = 0;
+constexpr bool     SOFTWARE_RESET_ON_DISCONNECT = false;
 
 /* PINS */
 
@@ -1243,18 +1244,22 @@ public:
 
   void loop() {
     // If no USB connection or DTR, clear buffers and mark disconnected
-    if (!is_dtr_ready()) {
-      if (!rx_buffer.empty())
-        rx_buffer.clear();
+    if (!is_dtr_ready() && !wait_connection) {
+      receive_to_rx_buf(); // Consume Serial buffer
 
-      if (!rx_cobs.empty())
-        rx_cobs.clear();
-
+      rx_buffer.clear();
+      rx_cobs.clear();
       rx_packet.reset();
 
       current_handshake = HandshakeStage::None;
 
       wait_connection = true;
+
+      disconnect_callback();
+
+      if constexpr (SOFTWARE_RESET_ON_DISCONNECT) {
+        watchdog_reboot(0, SRAM_END, 10);
+      }
 
       return;
     };
@@ -1376,6 +1381,10 @@ public:
   void add_capability(capability::ICapability &host_cap, const capability::ICapability &device_cap) {
     host_capabilities.push_back(std::ref(host_cap));
     device_capabilities.push_back(std::cref(device_cap));
+  }
+
+  void on_disconnect(std::function<void()> &&fn) {
+    disconnect_callback = std::move(fn);
   }
 
   // Receiving
@@ -1574,6 +1583,8 @@ private:
   data_callbacks_t data_callbacks;
   data_callbacks_t error_callbacks;
 
+  std::function<void()> disconnect_callback;
+
   void receive_to_rx_buf() {
     size_t avail;
 
@@ -1738,12 +1749,12 @@ struct DeviceData final : ISerializable {
 
 struct ToneData final : IDeserializable {
   float frequency;
-  float volume;
+  float volume = 1;
   std::optional<uint32_t> duration;
 
   ToneData() = default;
 
-  ToneData(const float frequency, const float volume,
+  ToneData(const float frequency, const float volume = 1,
        const std::optional<uint32_t> duration = std::nullopt)
       : frequency(frequency), volume(volume), duration(duration) {}
 
@@ -1915,6 +1926,22 @@ public:
 
 FraiselaitDeviceCapability fraiselaitDeviceCap;
 
+void reset_state() {
+  tone_data.frequency = 0;
+  tone_data.volume = 1;
+  tone_data.duration.reset();
+
+  color_data.r = 0;
+  color_data.g = 0;
+  color_data.b = 0;
+
+  send_data_forever = false;
+
+  rp2040.fifo.push_nb(FIFO_NO_TONE);
+  rp2040.fifo.push_nb(FIFO_RGB_LED);
+  rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&color_data));
+}
+
 void setup() {
   // 115200 bps, 8 data bits, no parity, 1 stop bit
   Serial.begin(115200, SERIAL_8N1);
@@ -1954,6 +1981,8 @@ void setup() {
       process_data(flags, decoder);
     }
   );
+
+  comm.on_disconnect(reset_state);
 }
 
 void loop() {
