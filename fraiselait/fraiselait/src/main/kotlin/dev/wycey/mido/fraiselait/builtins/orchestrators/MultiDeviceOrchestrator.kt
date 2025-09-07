@@ -21,7 +21,9 @@ public open class MultiDeviceOrchestrator(
     val device =
       FraiselaitDevice(
         serialRate,
-        SerialPortSelection.Manual(port)
+        SerialPortSelection.Manual(port),
+        listOf(),
+        false
       )
 
     device.onStatusChange { status ->
@@ -65,6 +67,8 @@ public open class MultiDeviceOrchestrator(
         }
       }
     }
+
+    device.connect()
 
     return device
   }
