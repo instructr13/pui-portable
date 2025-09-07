@@ -35,15 +35,19 @@ public class VariableByteBuffer
       get() = buffer.arrayOffset()
 
     public fun duplicate(): VariableByteBuffer {
-      val newVbb = VariableByteBuffer(order)
+      val newBuffer = VariableByteBuffer(order)
 
-      newVbb.ensureCapacity(size)
-      newVbb.size = size
+      newBuffer.ensureCapacity(size)
+      newBuffer.size = size
+
+      val oldPos = buffer.position()
 
       buffer.position(0)
-      newVbb.buffer.put(buffer.duplicate().limit(size))
+      newBuffer.buffer.put(buffer.duplicate().limit(size))
+      newBuffer.buffer.position(oldPos.coerceAtMost(size))
+      buffer.position(oldPos)
 
-      return newVbb
+      return newBuffer
     }
 
     public fun get(index: Int): Byte {
@@ -80,9 +84,7 @@ public class VariableByteBuffer
     }
 
     public fun getShort(index: Int): Short {
-      if (index !in 0..<(size - 1)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 2)
 
       return buffer.getShort(index)
     }
@@ -96,9 +98,7 @@ public class VariableByteBuffer
     }
 
     public fun getInt(index: Int): Int {
-      if (index !in 0..<(size - 3)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 4)
 
       return buffer.getInt(index)
     }
@@ -112,9 +112,7 @@ public class VariableByteBuffer
     }
 
     public fun getLong(index: Int): Long {
-      if (index !in 0..<(size - 7)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 8)
 
       return buffer.getLong(index)
     }
@@ -128,9 +126,7 @@ public class VariableByteBuffer
     }
 
     public fun getFloat(index: Int): Float {
-      if (index !in 0..<(size - 3)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 4)
 
       return buffer.getFloat(index)
     }
@@ -144,9 +140,7 @@ public class VariableByteBuffer
     }
 
     public fun getDouble(index: Int): Double {
-      if (index !in 0..<(size - 7)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 8)
 
       return buffer.getDouble(index)
     }
@@ -160,13 +154,11 @@ public class VariableByteBuffer
     }
 
     public fun put(value: Byte) {
-      ensureCapacity(size + 1)
+      val newSize = prepareForAppend(1)
 
       buffer.put(value)
 
-      if (size < buffer.position()) {
-        size = buffer.position()
-      }
+      size = newSize
     }
 
     @JvmOverloads
@@ -179,9 +171,8 @@ public class VariableByteBuffer
         throw IndexOutOfBoundsException("Offset: $offset, Length: $length, Src size: ${src.size}")
       }
 
-      val newSize = maxOf(size + length, buffer.position() + length)
+      val newSize = prepareForAppend(length)
 
-      ensureCapacity(newSize)
       buffer.put(src, offset, length)
 
       size = newSize
@@ -191,19 +182,16 @@ public class VariableByteBuffer
       index: Int,
       value: Short
     ) {
-      if (index !in 0..<(size - 1)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 2)
 
       buffer.putShort(index, value)
     }
 
     public fun putShort(value: Short) {
-      val newSize = maxOf(size + 2, buffer.position() + 2)
-
-      ensureCapacity(newSize)
+      val newSize = prepareForAppend(2)
 
       buffer.putShort(value)
+
       size = newSize
     }
 
@@ -211,19 +199,16 @@ public class VariableByteBuffer
       index: Int,
       value: Int
     ) {
-      if (index !in 0..<(size - 3)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 4)
 
       buffer.putInt(index, value)
     }
 
     public fun putInt(value: Int) {
-      val newSize = maxOf(size + 4, buffer.position() + 4)
-
-      ensureCapacity(newSize)
+      val newSize = prepareForAppend(4)
 
       buffer.putInt(value)
+
       size = newSize
     }
 
@@ -231,19 +216,16 @@ public class VariableByteBuffer
       index: Int,
       value: Long
     ) {
-      if (index !in 0..<(size - 7)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 8)
 
       buffer.putLong(index, value)
     }
 
     public fun putLong(value: Long) {
-      val newSize = maxOf(size + 8, buffer.position() + 8)
+      val newSize = prepareForAppend(8)
 
-      ensureCapacity(newSize)
+      buffer.putLong(value)
 
-      buffer.putLong(size, value)
       size = newSize
     }
 
@@ -251,19 +233,16 @@ public class VariableByteBuffer
       index: Int,
       value: Float
     ) {
-      if (index !in 0..<(size - 3)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 4)
 
       buffer.putFloat(index, value)
     }
 
     public fun putFloat(value: Float) {
-      val newSize = maxOf(size + 4, buffer.position() + 4)
+      val newSize = prepareForAppend(4)
 
-      ensureCapacity(newSize)
+      buffer.putFloat(value)
 
-      buffer.putFloat(size, value)
       size = newSize
     }
 
@@ -271,19 +250,16 @@ public class VariableByteBuffer
       index: Int,
       value: Double
     ) {
-      if (index !in 0..<(size - 7)) {
-        throw IndexOutOfBoundsException("Index: $index, Size: $size")
-      }
+      checkIndex(index, 8)
 
       buffer.putDouble(index, value)
     }
 
     public fun putDouble(value: Double) {
-      val newSize = maxOf(size + 8, buffer.position() + 8)
+      val newSize = prepareForAppend(8)
 
-      ensureCapacity(newSize)
+      buffer.putDouble(value)
 
-      buffer.putDouble(size, value)
       size = newSize
     }
 
@@ -303,6 +279,8 @@ public class VariableByteBuffer
 
     public fun flip() {
       buffer.flip()
+
+      size = buffer.limit()
     }
 
     public fun rewind() {
@@ -315,6 +293,23 @@ public class VariableByteBuffer
       }
     }
 
+    private fun prepareForAppend(bytes: Int): Int {
+      val newSize = maxOf(size + bytes, buffer.position() + bytes)
+
+      ensureCapacity(newSize)
+
+      return newSize
+    }
+
+    private fun checkIndex(
+      index: Int,
+      bytes: Int
+    ) {
+      if (index !in 0..<(size - bytes + 1)) {
+        throw IndexOutOfBoundsException("Index: $index, Size: $size")
+      }
+    }
+
     private fun extend(minCapacity: Int) {
       var newCapacity = capacity
 
@@ -324,8 +319,11 @@ public class VariableByteBuffer
 
       val newBuffer = ByteBuffer.allocate(newCapacity).order(order)
 
+      val oldPos = buffer.position()
+
       buffer.position(0)
       newBuffer.put(buffer.duplicate().limit(size))
+      newBuffer.position(oldPos.coerceAtMost(size))
 
       buffer = newBuffer
     }
