@@ -841,14 +841,6 @@ uint32_t get() {
 
 } // namespace device_id
 
-#pragma region Serial Communication Utility
-
-bool is_dtr_ready() {
-  return tu_bit_test(tud_cdc_n_get_line_state(0), 0);
-}
-
-#pragma endregion
-
 #pragma region Packet Communicator Implementation
 
 /*
@@ -1543,6 +1535,10 @@ private:
     DeviceHelloSent,
     Completed,
   };
+
+  static bool is_dtr_ready() {
+    return tu_bit_test(tud_cdc_n_get_line_state(0), 0);
+  }
 
   static void send_packet(const Packet &packet) {
     const auto raw_data = packet.encode();
