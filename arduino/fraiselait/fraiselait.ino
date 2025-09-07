@@ -841,6 +841,14 @@ uint32_t get() {
 
 } // namespace device_id
 
+#pragma region Serial Communication Utility
+
+bool is_dtr_ready() {
+  return tu_bit_test(tud_cdc_n_get_line_state(0), 0);
+}
+
+#pragma endregion
+
 #pragma region Packet Communicator Implementation
 
 /*
@@ -1243,7 +1251,7 @@ public:
 
   void loop() {
     // If no USB connection or DTR, clear buffers and mark disconnected
-    if (!Serial) {
+    if (!is_dtr_ready()) {
       if (!rx_buffer.empty())
         rx_buffer.clear();
 
@@ -1799,7 +1807,6 @@ bool send_data_forever = false;
 void wait_for_serial() {
   bool led_state = false;
 
-  // Wait for host DTR
   while (!Serial) {
     delay(150);
 
