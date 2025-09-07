@@ -98,4 +98,7 @@ internal data class Packet(
     result = 31 * result + payload.contentHashCode()
     return result
   }
+
+  override fun toString(): String =
+    "Packet(type=$type, payload=${payload.joinToString(", ") { "0x" + it.toUByte().toString(16).padStart(2, '0') }})"
 }

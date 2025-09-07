@@ -22,6 +22,8 @@ public open class SerialDevice
     public companion object {
       public const val VERSION: Int = 400
 
+      public val enableDebugOutput: Boolean = System.getenv("FRAISELAIT_DEBUG") == "1"
+
       @JvmStatic
       public fun list(): Array<String> = SerialPortList.getPortNames()
     }
@@ -73,6 +75,8 @@ public open class SerialDevice
           if (cobsStatus == COBS.DecodeStatus.ERROR) {
             rxCOBSBuffer.clear()
 
+            debugLog("COBS decode error")
+
             return
           }
 
@@ -87,6 +91,8 @@ public open class SerialDevice
           rxCOBSBuffer.clear()
 
           if (rxPacket == null) {
+            debugLog("Packet parse error")
+
             return
           }
 
@@ -121,6 +127,8 @@ public open class SerialDevice
               throw IllegalStateException("Handshake failed: $it")
             } ?: run {
               status = ConnectionStatus.CONNECTED
+
+              debugLog("Connected")
             }
 
             return
@@ -151,7 +159,7 @@ public open class SerialDevice
               val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
               val message = String(payload.array(), Charsets.UTF_8)
 
-              println("[$id] DEBUG: $message")
+              debugLog(message)
             }
 
             else -> {
@@ -213,6 +221,8 @@ public open class SerialDevice
           }
         }
 
+        debugLog("Received Device Hello with $capabilityCount capabilities")
+
         return true
       }
 
@@ -245,6 +255,8 @@ public open class SerialDevice
           serial?.closePort()
         } catch (_: SerialPortException) {
         }
+
+        debugLog("Changing port to '$value'")
 
         serial = null
         field = value
@@ -422,6 +434,8 @@ public open class SerialDevice
         }
       }
 
+      debugLog("Connecting")
+
       serial?.addEventListener(Listener(), SerialPort.MASK_RXCHAR)
       serial?.setDTR(true)
 
@@ -440,6 +454,8 @@ public open class SerialDevice
 
       status = ConnectionStatus.NOT_CONNECTED
       id = null
+
+      debugLog("Disconnected")
     }
 
     public fun dispose() {
@@ -461,6 +477,8 @@ public open class SerialDevice
 
       id = null
       serial = null
+
+      debugLog("Disposed")
     }
 
     private fun addShutdownHook() {
@@ -494,6 +512,8 @@ public open class SerialDevice
           SerialPort.PARITY_NONE
         )
         serial.setDTR(false)
+
+        debugLog("Opened serial port '$actualPort' at $serialRate baud")
       } catch (e: Exception) {
         println("Failed to open serial port '$actualPort': $e")
 
@@ -510,6 +530,12 @@ public open class SerialDevice
     }
 
     private fun sendPacket(packet: Packet) {
+      if (status == ConnectionStatus.DISPOSED) {
+        throw IllegalStateException("Device is disposed")
+      }
+
+      debugLog("Sending packet: $packet")
+
       val rawData = packet.encode()
       val cobsData = COBS.encode(rawData)
 
@@ -531,11 +557,23 @@ public open class SerialDevice
         payload.put(it.toByteArray())
       }
 
+      debugLog("Sending Host Hello with ${hostCapabilities.size} capabilities")
+
       sendPacket(Packet(PacketType.HOST_HELLO, payload.array))
     }
 
     private fun sendHostAck() {
+      debugLog("Sending Host Ack")
+
       sendPacket(Packet(PacketType.HOST_ACK))
+    }
+
+    private fun debugLog(message: String) {
+      if (!enableDebugOutput) return
+
+      val prefix = if (id != null) "[$id | $port]" else "[$port]"
+
+      println("$prefix DEBUG: $message")
     }
 
     override fun equals(other: Any?): Boolean {
