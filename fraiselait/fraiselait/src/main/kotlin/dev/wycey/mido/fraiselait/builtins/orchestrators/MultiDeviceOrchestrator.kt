@@ -26,6 +26,10 @@ public open class MultiDeviceOrchestrator(
 
     device.onStatusChange { status ->
       when (status) {
+        ConnectionStatus.CONNECTING -> {
+          println("Connecting to device: ${device.port}")
+        }
+
         ConnectionStatus.CONNECTED -> {
           if (_devices.put(device.id!!, device) != null) {
             throw IllegalStateException("New device $device is already in the devices set")
@@ -59,8 +63,6 @@ public open class MultiDeviceOrchestrator(
             println("Removed device name: ${device.id}")
           }
         }
-
-        else -> {}
       }
     }
 
