@@ -7,7 +7,8 @@ internal enum class PacketType(
   DEVICE_HELLO(0x0002u),
   HOST_ACK(0x0003u),
   DATA(0x0004u),
-  ERROR(0x0005u)
+  ERROR(0x0005u),
+  DEBUG_ECHO(0x0006u)
 
   ;
 

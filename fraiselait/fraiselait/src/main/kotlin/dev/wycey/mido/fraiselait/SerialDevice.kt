@@ -147,6 +147,13 @@ public open class SerialDevice
               }
             }
 
+            PacketType.DEBUG_ECHO -> {
+              val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
+              val message = String(payload.array(), Charsets.UTF_8)
+
+              println("[$id] DEBUG: $message")
+            }
+
             else -> {
               sendError(ReservedErrorCode.UNKNOWN_PACKET_TYPE.code)
             }

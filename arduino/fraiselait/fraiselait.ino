@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <map>
 #include <memory>
@@ -456,7 +457,13 @@ const NoiseWaveform NOISE_WAVEFORM{};
 
 class Speaker {
 public:
-  explicit Speaker(uint16_t pin, float freq = 440, float volume = 1);
+  explicit Speaker(uint16_t pin, bool use_core1 = false, float freq = 440, float volume = 1);
+
+  Speaker(const Speaker &) = delete;
+  Speaker &operator=(const Speaker &) = delete;
+
+  Speaker(Speaker &&) = delete;
+  Speaker &operator=(Speaker &&) = delete;
 
   [[nodiscard]] float get_frequency() const { return audible_freq; }
 
@@ -478,6 +485,7 @@ private:
   static constexpr float carrier_freq = 1000 * 1000; // 1MHz carrier
 
   uint16_t pin;
+
   const Waveform *next_waveform = nullptr;
   const Waveform *waveform = &SQUARE_WAVEFORM;
 
@@ -490,6 +498,7 @@ private:
   bool freq_changed = false;
   uint16_t waveform_index = 0;
 
+  alarm_pool_t *alarm_pool;
   repeating_timer timer{};
   alarm_id_t alarm_id = 0;
 
@@ -520,8 +529,15 @@ float calculate_duty_scale_for_volume_basic(float volume) {
 
 } // namespace
 
-Speaker::Speaker(const uint16_t pin, const float freq, const float volume)
+Speaker::Speaker(const uint16_t pin, const bool use_core1, const float freq,
+                 const float volume)
     : pin(pin), audible_freq(freq) {
+  if (use_core1) {
+    alarm_pool = alarm_pool_create(1, 4);
+  } else {
+    alarm_pool = alarm_pool_get_default();
+  }
+
   refresh_lut_period();
   set_volume(volume);
 }
@@ -565,8 +581,8 @@ void Speaker::play(const uint32_t duration) {
 
   is_playing = true;
 
-  add_repeating_timer_us(
-      -static_cast<int64_t>(lut_period_us),
+  alarm_pool_add_repeating_timer_us(
+      alarm_pool, -static_cast<int64_t>(lut_period_us),
       [](repeating_timer *t) {
         static_cast<Speaker *>(t->user_data)->repeating_timer_cb(t);
 
@@ -575,9 +591,9 @@ void Speaker::play(const uint32_t duration) {
       this, &timer);
 
   if (duration > 0) {
-    alarm_id = add_alarm_in_ms(
-        duration,
-        [](alarm_id_t id, void *user_data) {
+    alarm_id = alarm_pool_add_alarm_in_ms(
+        alarm_pool, duration,
+        [](const alarm_id_t id, void *user_data) {
           (void)id;
 
           static_cast<Speaker *>(user_data)->stop();
@@ -597,7 +613,7 @@ void Speaker::stop() {
   cancel_repeating_timer(&timer);
 
   if (alarm_id) {
-    cancel_alarm(alarm_id);
+    alarm_pool_cancel_alarm(alarm_pool, alarm_id);
 
     alarm_id = 0;
   }
@@ -846,6 +862,8 @@ uint32_t get() {
  *    Payload: Data Type (2 byte) + Data (variable length)
  * 5. Error (0x05): Sent by either side to indicate an error.
  *    Payload: Error Code (2 byte) + Error Message (variable length)
+ * 6. DebugEcho (0x06): Sent by the device to echo debug messages.
+ *    Payload: Debug Message (variable length)
  *
  * Components:
  * - Capability: A single capability represented as a byte.
@@ -956,7 +974,39 @@ DecodeStatus decode(std::vector<std::byte> &in, std::vector<std::byte> &out) {
 
 } // namespace cobs
 
-// Send with BE
+namespace crc8 {
+
+uint8_t compute(const std::vector<std::byte>::const_iterator begin,
+                const std::vector<std::byte>::const_iterator end) {
+  static constexpr uint8_t POLYNOMIAL = 0x07;
+
+  uint8_t crc = 0x00;
+
+  for (auto it = begin; it < end; ++it) {
+    const auto b = *it;
+
+    crc ^= std::to_integer<uint8_t>(b);
+
+    for (size_t i = 0; i < 8; ++i) {
+      if (crc & 0x80) {
+        crc = (crc << 1) ^ POLYNOMIAL; // Polynomial x^8 + x^2 + x + 1
+      } else {
+        crc <<= 1;
+      }
+    }
+  }
+
+  return crc;
+}
+
+bool verify(const std::vector<std::byte>::const_iterator begin,
+            const std::vector<std::byte>::const_iterator end,
+            const uint8_t expected_crc) {
+  return compute(begin, end) == expected_crc;
+}
+
+} // namespace crc8
+
 class PacketEncoder {
 public:
   explicit PacketEncoder(std::vector<std::byte> &buf) : buffer(buf) {}
@@ -999,40 +1049,6 @@ private:
   std::vector<std::byte> &buffer;
 };
 
-namespace crc8 {
-
-uint8_t compute(const std::vector<std::byte>::const_iterator begin,
-                const std::vector<std::byte>::const_iterator end) {
-  static constexpr uint8_t POLYNOMIAL = 0x07;
-
-  uint8_t crc = 0x00;
-
-  for (auto it = begin; it < end; ++it) {
-    const auto b = *it;
-
-    crc ^= std::to_integer<uint8_t>(b);
-
-    for (size_t i = 0; i < 8; ++i) {
-      if (crc & 0x80) {
-        crc = (crc << 1) ^ POLYNOMIAL; // Polynomial x^8 + x^2 + x + 1
-      } else {
-        crc <<= 1;
-      }
-    }
-  }
-
-  return crc;
-}
-
-bool verify(const std::vector<std::byte>::const_iterator begin,
-            const std::vector<std::byte>::const_iterator end,
-            const uint8_t expected_crc) {
-  return compute(begin, end) == expected_crc;
-}
-
-} // namespace crc8
-
-// Consuming packet decoder
 class PacketDecoder {
 public:
   explicit PacketDecoder(std::vector<std::byte> &buffer) : buffer(buffer) {}
@@ -1081,10 +1097,14 @@ public:
 
   float pop_float() const {
     assert(buffer.size() >= 4);
+    static_assert(sizeof(float) == sizeof(uint32_t));
 
     const auto raw_bytes = pop_uint32();
+    float ret;
 
-    return *reinterpret_cast<const float *>(&raw_bytes);
+    std::memcpy(&ret, &raw_bytes, sizeof(float));
+
+    return ret;
   }
 
   std::string pop_string(const size_t len) const {
@@ -1105,6 +1125,7 @@ enum class PacketType : uint16_t {
   HostAck = 0x0003,
   Data = 0x0004,
   Error = 0x0005,
+  DebugEcho = 0x0006,
 };
 
 enum class ReservedErrorCode : uint16_t {
@@ -1270,6 +1291,11 @@ public:
     }
 
     const auto type = static_cast<PacketType>(rx_packet->type());
+
+    if (type == PacketType::DebugEcho) {
+      // Drop all debug echo from host
+      return;
+    }
 
     if (type == PacketType::Error) {
       const auto &payload = rx_packet->payload();
@@ -1479,6 +1505,19 @@ public:
     send_packet(packet);
   }
 
+  void send_debug(const std::string &str) const {
+    std::vector<std::byte> payload;
+
+    const PacketEncoder encoder{payload};
+
+    encoder.push_string(str);
+
+    const Packet packet{static_cast<uint16_t>(PacketType::DebugEcho),
+                        std::move(payload)};
+
+    send_packet(packet);
+  }
+
   [[nodiscard]] bool is_waiting_connection() const {
     return wait_connection;
   }
@@ -1671,6 +1710,8 @@ private:
 
 #pragma endregion /* Packet Communicator Implementation */
 
+PacketCommunicator comm;
+
 struct DeviceData final : ISerializable {
   bool button_pressing = false;
   int32_t light_strength_average = 0;
@@ -1740,13 +1781,13 @@ struct RGBColorData final : IDeserializable {
 };
 
 enum class WaveformType : uint16_t {
-  SQUARE = 0x0001,
-  SQUARE_25 = 0x0002,
-  SQUARE_12 = 0x0003,
-  TRIANGLE = 0x0004,
-  SAW = 0x0005,
-  SINE = 0x0006,
-  NOISE = 0x0007,
+  Square = 0x0001,
+  Square25 = 0x0002,
+  Square12 = 0x0003,
+  Triangle = 0x0004,
+  Saw = 0x0005,
+  Sine = 0x0006,
+  Noise = 0x0007,
 };
 
 volatile bool button_pressing = false;
@@ -1754,8 +1795,6 @@ volatile int32_t light_strength_average = 0;
 volatile float core_temp_average = 0;
 
 bool send_data_forever = false;
-
-PacketCommunicator comm;
 
 void wait_for_serial() {
   bool led_state = false;
@@ -1962,7 +2001,7 @@ void smooth_analog_values() {
   core_temp_average = core_temp_total / core_temp_readings.size();
 }
 
-static dynamic_tone::Speaker sp{PIN_SPEAKER};
+static dynamic_tone::Speaker sp{PIN_SPEAKER, true};
 
 void command_no_tone() { sp.stop(); }
 
@@ -1989,39 +2028,42 @@ void command_change_led_builtin(const bool data) {
 
 void command_change_waveform(WaveformType type) {
   switch (type) {
-    case WaveformType::SQUARE:
+    case WaveformType::Square:
       sp.set_waveform(dynamic_tone::SQUARE_WAVEFORM);
 
       break;
 
-    case WaveformType::SQUARE_25:
+    case WaveformType::Square25:
       sp.set_waveform(dynamic_tone::SQUARE_25_WAVEFORM);
 
       break;
 
-    case WaveformType::SQUARE_12:
+    case WaveformType::Square12:
       sp.set_waveform(dynamic_tone::SQUARE_12_WAVEFORM);
 
       break;
 
-    case WaveformType::TRIANGLE:
+    case WaveformType::Triangle:
       sp.set_waveform(dynamic_tone::TRIANGLE_WAVEFORM);
 
       break;
 
-    case WaveformType::SAW:
+    case WaveformType::Saw:
       sp.set_waveform(dynamic_tone::SAW_WAVEFORM);
 
       break;
 
-    case WaveformType::SINE:
+    case WaveformType::Sine:
       sp.set_waveform(dynamic_tone::SINE_WAVEFORM);
 
       break;
 
-    case WaveformType::NOISE:
+    case WaveformType::Noise:
       sp.set_waveform(dynamic_tone::NOISE_WAVEFORM);
 
+      break;
+
+    default:
       break;
   }
 }

@@ -23,6 +23,8 @@ import java.nio.ByteBuffer
  *    Payload: Data Type (2 byte) + Data (variable length)
  * 5. Error (0x05): Sent by either side to indicate an error.
  *    Payload: Error Code (2 byte) + Error Message (variable length)
+ * 6. DebugEcho (0x06): Sent by the device to echo debug messages.
+ *    Payload: Debug Message (variable length)
  *
  * Components:
  * - Capability: A single capability represented as a byte.
