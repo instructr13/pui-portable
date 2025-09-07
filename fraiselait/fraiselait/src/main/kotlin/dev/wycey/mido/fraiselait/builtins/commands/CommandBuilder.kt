@@ -1,12 +1,15 @@
 package dev.wycey.mido.fraiselait.builtins.commands
 
+import dev.wycey.mido.fraiselait.builtins.WaveformType
+
 public class CommandBuilder {
+  internal var waveformType: WaveformType? = null
   internal var changeColor: Commands.ChangeColor? = null
   internal var changeLedBuiltin: Boolean? = null
   internal var tone: Commands.Tone? = null
 
   public var flags: UByte =
-    0u // LSB First, 1st=restoreDefaultPins, 2nd=changePin, 3rd=noTone, 4th=tone, 5th=changeLedBuiltin, 6th=changeColor
+    0u // LSB First, 1st=[unused], 2nd=changeWaveform, 3rd=noTone, 4th=tone, 5th=changeLedBuiltin, 6th=changeColor
     private set
 
   private fun setFlagFor(position: Int) {
@@ -19,18 +22,16 @@ public class CommandBuilder {
 
   private fun hasFlagFor(position: Int) = flags and ((1u shl position).toUByte()) != 0u.toUByte()
 
-  public fun restoreDefaultPins(): CommandBuilder {
-    setFlagFor(0)
-
-    if (hasFlagFor(1)) {
-      unsetFlagFor(1)
-    }
+  public fun changeWaveform(type: WaveformType): CommandBuilder {
+    waveformType = type
+    setFlagFor(1)
 
     return this
   }
 
-  public fun unsetRestoreDefaultPins(): CommandBuilder {
-    unsetFlagFor(0)
+  public fun unsetChangeWaveform(): CommandBuilder {
+    waveformType = null
+    unsetFlagFor(1)
 
     return this
   }
@@ -55,10 +56,11 @@ public class CommandBuilder {
 
   @JvmOverloads
   public fun tone(
-    frequency: Int,
+    frequency: Float,
+    volume: Float = 1f,
     duration: Long? = null
   ): CommandBuilder {
-    tone = Commands.Tone(frequency, duration)
+    tone = Commands.Tone(frequency, volume, duration)
     setFlagFor(3)
 
     unsetFlagFor(2)

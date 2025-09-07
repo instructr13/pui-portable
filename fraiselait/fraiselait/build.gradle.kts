@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "$group.fraiselait"
-version = "2.2.0"
+version = "2.2.1"
 
 dependencies {
   implementation(libs.kotlinx.coroutines.core)

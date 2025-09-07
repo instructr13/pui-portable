@@ -23,6 +23,10 @@ public data class Command(
   override fun serialize(buffer: VariableByteBuffer) {
     buffer.put(flags.toByte())
 
+    innerObject.waveformType?.let {
+      buffer.putShort(it.code.toShort())
+    }
+
     innerObject.changeColor?.let {
       buffer.put(it.r.toByte())
       buffer.put(it.g.toByte())
@@ -34,7 +38,8 @@ public data class Command(
     }
 
     innerObject.tone?.let {
-      buffer.putShort(it.frequency.toShort())
+      buffer.putFloat(it.frequency)
+      buffer.putFloat(it.volume)
 
       buffer.putInt(it.duration?.toInt() ?: 0)
     }

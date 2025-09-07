@@ -20,14 +20,17 @@ internal sealed class Commands {
   internal data class Tone
     @JvmOverloads
     constructor(
-      val frequency: UShort,
+      val frequency: Float,
+      val volume: Float = 1f,
       val duration: UInt? = null
     ) : Commands() {
       internal constructor(
-        rawFrequency: Int,
+        rawFrequency: Float,
+        rawVolume: Float = 1f,
         rawDuration: Long? = null
       ) : this(
-        rawFrequency.toUShort(),
+        rawFrequency,
+        rawVolume,
         rawDuration?.toUInt()
       )
     }
