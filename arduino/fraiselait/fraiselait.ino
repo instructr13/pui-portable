@@ -545,10 +545,10 @@ Speaker::Speaker(const uint16_t pin, const bool use_core1, const float freq,
 void Speaker::set_frequency(const float freq) {
   audible_freq = freq;
 
+  refresh_lut_period();
+
   if (!is_playing)
     return;
-
-  refresh_lut_period();
 
   freq_changed = true;
 }
