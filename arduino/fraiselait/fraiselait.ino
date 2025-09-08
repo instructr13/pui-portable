@@ -496,18 +496,16 @@ private:
   uint32_t lut_period_us = 0;
 
   bool is_playing = false;
+  uint32_t playback_end_ms = 0;
   bool freq_changed = false;
   uint16_t waveform_index = 0;
 
   alarm_pool_t *alarm_pool;
   repeating_timer timer{};
-  alarm_id_t alarm_id = 0;
 
   void refresh_lut_period();
 
   void repeating_timer_cb(repeating_timer *t);
-
-  void add_stop_alarm(uint32_t duration);
 };
 
 namespace {
@@ -578,8 +576,10 @@ void Speaker::set_waveform(const Waveform &wf) {
 
 void Speaker::play(const uint32_t duration) {
   if (is_playing) {
-    if (duration > 0 && alarm_id == 0) {
-      add_stop_alarm(duration);
+    if (duration) {
+      playback_end_ms = to_ms_since_boot(get_absolute_time()) + duration;
+    } else {
+      playback_end_ms = 0;
     }
 
     return;
@@ -599,7 +599,7 @@ void Speaker::play(const uint32_t duration) {
       this, &timer);
 
   if (duration > 0) {
-    add_stop_alarm(duration);
+    playback_end_ms = to_ms_since_boot(get_absolute_time()) + duration;
   }
 }
 
@@ -608,14 +608,9 @@ void Speaker::stop() {
     return;
 
   is_playing = false;
+  playback_end_ms = 0;
 
   cancel_repeating_timer(&timer);
-
-  if (alarm_id) {
-    alarm_pool_cancel_alarm(alarm_pool, alarm_id);
-
-    alarm_id = 0;
-  }
 
   noToneDynamic(pin);
 }
@@ -628,6 +623,13 @@ void Speaker::refresh_lut_period() {
 void Speaker::repeating_timer_cb(repeating_timer *t) {
   if (!is_playing)
     return;
+
+  if (playback_end_ms > 0 &&
+      to_ms_since_boot(get_absolute_time()) >= playback_end_ms) {
+    stop();
+
+    return;
+  }
 
   if (waveform_index == 0 && next_waveform) {
     waveform = next_waveform;
@@ -652,27 +654,6 @@ void Speaker::repeating_timer_cb(repeating_timer *t) {
   waveform_index = (waveform_index + 1) & (waveform->get_size() - 1);
 
   toneDynamicUpdate(pin, carrier_freq, duty_cycle * duty_scale);
-}
-
-void Speaker::add_stop_alarm(const uint32_t duration) {
-  if (alarm_id) {
-    alarm_pool_cancel_alarm(alarm_pool, alarm_id);
-
-    alarm_id = 0;
-  }
-
-  if (duration > 0) {
-    alarm_id = alarm_pool_add_alarm_in_ms(
-        alarm_pool, duration,
-        [](const alarm_id_t id, void *user_data) {
-          (void)id;
-
-          static_cast<Speaker *>(user_data)->stop();
-
-          return static_cast<int64_t>(0);
-        },
-        this, true);
-  }
 }
 
 #pragma endregion
