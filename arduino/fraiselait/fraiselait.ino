@@ -544,6 +544,9 @@ Speaker::Speaker(const uint16_t pin, const bool use_core1, const float freq,
 }
 
 void Speaker::set_frequency(const float freq) {
+  if (audible_freq == freq || freq <= 0)
+    return;
+
   audible_freq = freq;
 
   refresh_lut_period();
@@ -555,6 +558,9 @@ void Speaker::set_frequency(const float freq) {
 }
 
 void Speaker::set_volume(const float vol) {
+  if (volume == vol)
+    return;
+
   volume = std::clamp(vol, 0.f, 1.f);
   duty_scale = calculate_duty_scale_for_volume_basic(volume);
 }
