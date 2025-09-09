@@ -37,8 +37,6 @@ public open class MultiDeviceOrchestrator(
             throw IllegalStateException("New device $device is already in the devices set")
           }
 
-          device.retrieveStateForever = true
-
           println("New device: ${device.id}")
         }
 

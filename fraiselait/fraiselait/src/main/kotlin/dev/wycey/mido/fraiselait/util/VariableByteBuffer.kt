@@ -279,8 +279,6 @@ public class VariableByteBuffer
 
     public fun flip() {
       buffer.flip()
-
-      size = buffer.limit()
     }
 
     public fun rewind() {

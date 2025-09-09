@@ -48,7 +48,7 @@ public class FraiselaitDevice
       get() = atomicState.get()
 
     public var retrieveStateForever: Boolean = false
-      set(value) {
+      private set(value) {
         field = value
 
         if (value) {

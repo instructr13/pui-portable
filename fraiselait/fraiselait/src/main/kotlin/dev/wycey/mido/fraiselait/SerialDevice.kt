@@ -10,6 +10,11 @@ import dev.wycey.mido.fraiselait.util.VariableByteBuffer
 import jssc.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.LockSupport
 
 public open class SerialDevice
   @JvmOverloads
@@ -22,30 +27,48 @@ public open class SerialDevice
     public companion object {
       public const val VERSION: Int = 400
 
-      public val enableDebugOutput: Boolean = System.getenv("FRAISELAIT_DEBUG") == "1"
+      public var enableDebugOutput: Boolean = System.getenv("FRAISELAIT_DEBUG") == "1"
 
       @JvmStatic
       public fun list(): Array<String> = SerialPortList.getPortNames()
     }
 
-    private val onStatusChangeCallbacks = mutableListOf<(ConnectionStatus) -> Unit>()
-    private val onDisposeCallbacks = mutableListOf<() -> Unit>()
-    private val dataCallbacks = mutableListOf<Pair<UShort, (ByteBuffer) -> Unit>>()
-    private val errorCallbacks = mutableListOf<Pair<UShort, (ByteBuffer) -> Unit>>()
+    private val onStatusChangeCallbacks = CopyOnWriteArrayList<(ConnectionStatus) -> Unit>()
+    private val onDisposeCallbacks = CopyOnWriteArrayList<() -> Unit>()
+    private val dataCallbacks = CopyOnWriteArrayList<Pair<UShort, (ByteBuffer) -> Unit>>()
+    private val errorCallbacks = CopyOnWriteArrayList<Pair<UShort, (ByteBuffer) -> Unit>>()
 
     @Volatile
     public var status: ConnectionStatus = ConnectionStatus.NOT_CONNECTED
       private set(value) {
-        field = value
+        synchronized(this) {
+          field = value
 
-        onStatusChangeCallbacks.forEach { it(value) }
+          onStatusChangeCallbacks.toList().forEach {
+            try {
+              it(value)
+            } catch (e: Exception) {
+              println("Error in status change callback: $e")
 
-        if (value == ConnectionStatus.DISPOSED) {
-          onDisposeCallbacks.forEach { it() }
-        }
+              e.printStackTrace()
+            }
+          }
 
-        if (value == ConnectionStatus.NOT_CONNECTED) {
-          id = null
+          if (value == ConnectionStatus.DISPOSED) {
+            onDisposeCallbacks.toList().forEach {
+              try {
+                it()
+              } catch (e: Exception) {
+                println("Error in dispose callback: $e")
+
+                e.printStackTrace()
+              }
+            }
+          }
+
+          if (value == ConnectionStatus.NOT_CONNECTED) {
+            id = null
+          }
         }
       }
 
@@ -99,29 +122,11 @@ public open class SerialDevice
           val type = rxPacket!!.type
 
           if (type == PacketType.ERROR) {
-            val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
-
-            if (payload.remaining() < 2) {
-              return
-            }
-
-            val buffer = payload.getShort().toUShort()
-
-            ReservedErrorCode.fromCode(buffer)?.let {
-              throw IllegalStateException("Received error from device: $it")
-            }
-
-            val errorData = ByteArray(payload.remaining())
-
-            payload.get(errorData)
-
-            errorCallbacks.filter { it.first == buffer }.forEach {
-              it.second(ByteBuffer.wrap(errorData).order(ByteOrder.BIG_ENDIAN))
-            }
+            handleErrorPacket(rxPacket!!)
           }
 
           if (status == ConnectionStatus.CONNECTING) {
-            processHandshake()?.let {
+            processHandshakePacket()?.let {
               sendError(it.code)
 
               throw IllegalStateException("Handshake failed: $it")
@@ -135,31 +140,13 @@ public open class SerialDevice
           }
 
           when (type) {
-            PacketType.DATA -> {
-              val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
-
-              if (payload.remaining() < 2) {
-                sendError(ReservedErrorCode.MALFORMED_PACKET.code)
-
-                return
-              }
-
-              val dataType = payload.getShort().toUShort()
-
-              val data = ByteArray(payload.remaining())
-
-              payload.get(data)
-
-              dataCallbacks.filter { it.first == dataType }.forEach {
-                it.second(ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN))
-              }
-            }
+            PacketType.DATA -> handleDataPacket(rxPacket!!)
 
             PacketType.DEBUG_ECHO -> {
               val payload = ByteBuffer.wrap(rxPacket!!.payload).order(ByteOrder.BIG_ENDIAN)
               val message = String(payload.array(), Charsets.UTF_8)
 
-              debugLog(message)
+              debugLog("Message from device: $message")
             }
 
             else -> {
@@ -226,7 +213,35 @@ public open class SerialDevice
         return true
       }
 
-      private fun processHandshake(): ReservedErrorCode? {
+      private fun handleErrorPacket(packet: Packet) {
+        val payload = ByteBuffer.wrap(packet.payload).order(ByteOrder.BIG_ENDIAN)
+
+        if (payload.remaining() < 2) {
+          return
+        }
+
+        val buffer = payload.getShort().toUShort()
+
+        ReservedErrorCode.fromCode(buffer)?.let {
+          throw IllegalStateException("Received error from device: $it")
+        }
+
+        val errorData = ByteArray(payload.remaining())
+
+        payload.get(errorData)
+
+        errorCallbacks.filter { it.first == buffer }.forEach {
+          try {
+            it.second(ByteBuffer.wrap(errorData).order(ByteOrder.BIG_ENDIAN))
+          } catch (e: Exception) {
+            println("Error in error callback for code $buffer: $e")
+
+            e.printStackTrace()
+          }
+        }
+      }
+
+      private fun processHandshakePacket(): ReservedErrorCode? {
         val packet = rxPacket ?: throw IllegalStateException("No packet to process")
 
         if (packet.type != PacketType.DEVICE_HELLO) return ReservedErrorCode.HANDSHAKE_NOT_COMPLETED
@@ -237,9 +252,45 @@ public open class SerialDevice
 
         return null
       }
+
+      private fun handleDataPacket(packet: Packet) {
+        val payload = ByteBuffer.wrap(packet.payload).order(ByteOrder.BIG_ENDIAN)
+
+        if (payload.remaining() < 2) {
+          sendError(ReservedErrorCode.MALFORMED_PACKET.code)
+
+          return
+        }
+
+        val dataType = payload.getShort().toUShort()
+
+        val data = ByteArray(payload.remaining())
+
+        payload.get(data)
+
+        dataCallbacks.filter { it.first == dataType }.forEach {
+          try {
+            it.second(ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN))
+          } catch (e: Exception) {
+            println("Error in data callback for type $dataType: $e")
+
+            e.printStackTrace()
+          }
+        }
+      }
     }
 
+    @Volatile
     private var serial: SerialPort? = null
+
+    private val writeQueue = ConcurrentLinkedQueue<Packet>()
+    private val writeRunning = AtomicBoolean(false)
+    private val executor =
+      Executors.newSingleThreadExecutor { r ->
+        Thread(r, "SerialDevice-Writer-${port ?: "unassigned"}").apply {
+          isDaemon = true
+        }
+      }
 
     public var port: String? = if (portSelection is SerialPortSelection.Manual) portSelection.port else null
       set(value) {
@@ -425,9 +476,7 @@ public open class SerialDevice
       }
 
       if (serial == null) {
-        serial = createSerial()
-
-        if (serial == null) {
+        serial = createSerial() ?: run {
           status = ConnectionStatus.NOT_CONNECTED
 
           return
@@ -449,6 +498,8 @@ public open class SerialDevice
         throw IllegalStateException("Device is disposed")
       }
 
+      stopWriter()
+
       serial?.setDTR(false)
       serial?.removeEventListener()
 
@@ -464,6 +515,8 @@ public open class SerialDevice
       }
 
       DevicePortWatcher.unlisten(::serialPortListener)
+
+      stopWriter()
 
       status = ConnectionStatus.DISPOSED
 
@@ -534,12 +587,52 @@ public open class SerialDevice
         throw IllegalStateException("Device is disposed")
       }
 
-      debugLog("Sending packet: $packet")
+      writeQueue.add(packet)
 
-      val rawData = packet.encode()
-      val cobsData = COBS.encode(rawData)
+      if (writeRunning.compareAndSet(false, true)) {
+        startWriter()
+      }
+    }
 
-      serial?.writeBytes(cobsData)
+    private fun startWriter() {
+      executor.submit {
+        try {
+          while (true) {
+            val packet = writeQueue.poll()
+
+            if (packet == null) {
+              LockSupport.parkNanos(1000)
+
+              continue
+            }
+
+            val rawData = packet.encode()
+            val data = COBS.encode(rawData)
+
+            val sp = serial ?: throw IllegalStateException("Serial port is not open")
+
+            try {
+              sp.writeBytes(data)
+            } catch (e: SerialPortException) {
+              debugLog("Error writing to serial port: $e")
+
+              writeQueue.add(packet) // Re-queue the data
+
+              break
+            }
+          }
+        } finally {
+          writeRunning.set(false)
+
+          if (writeQueue.isNotEmpty()) {
+            sendPacket(Packet(PacketType.DATA, byteArrayOf())) // Restart writer
+          }
+        }
+      }
+    }
+
+    private fun stopWriter() {
+      executor.shutdownNow()
     }
 
     private fun sendHostHello() {
