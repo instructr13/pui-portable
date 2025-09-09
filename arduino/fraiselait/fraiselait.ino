@@ -14,6 +14,7 @@
 
 constexpr uint32_t CUSTOM_DEVICE_ID = 0;
 constexpr bool     SOFTWARE_RESET_ON_DISCONNECT = false;
+constexpr bool     MORE_DEBUG_LOG = true;
 
 /* PINS */
 
@@ -1281,6 +1282,10 @@ public:
     rx_buffer.clear();
 
     if (status == cobs::DecodeStatus::Error) {
+      if constexpr (MORE_DEBUG_LOG) {
+        send_debug("COBS decode error");
+      }
+
       // COBS error, clear packet buffer
       if (!rx_cobs.empty())
         rx_cobs.clear();
@@ -1298,6 +1303,10 @@ public:
     rx_cobs.clear();
 
     if (!rx_packet) {
+      if constexpr (MORE_DEBUG_LOG) {
+        send_debug("Packet parse error");
+      }
+
       return;
     }
 
@@ -1949,8 +1958,8 @@ void reset_state() {
 }
 
 void setup() {
-  // 115200 bps, 8 data bits, no parity, 1 stop bit
-  Serial.begin(115200, SERIAL_8N1);
+  // 460800 bps, 8 data bits, no parity, 1 stop bit
+  Serial.begin(460800, SERIAL_8N1);
 
   wait_for_serial();
 
