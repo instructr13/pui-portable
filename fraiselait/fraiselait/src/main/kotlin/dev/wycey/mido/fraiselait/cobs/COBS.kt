@@ -1,12 +1,6 @@
 package dev.wycey.mido.fraiselait.cobs
 
 internal object COBS {
-  internal enum class DecodeStatus {
-    IN_PROGRESS,
-    COMPLETE,
-    ERROR
-  }
-
   fun encode(input: ByteArray): ByteArray {
     val ret = ByteArray(input.size + input.size / 254 + 2)
 
@@ -18,22 +12,20 @@ internal object COBS {
     while (readIndex < input.size) {
       if (input[readIndex] == 0.toByte()) {
         ret[codeIndex] = code.toByte()
-
         codeIndex = writeIndex++
-        readIndex++
 
         code = 1
+
+        readIndex++
 
         continue
       }
 
       ret[writeIndex++] = input[readIndex++]
-
       code++
 
       if (code == 0xFF) {
         ret[codeIndex] = code.toByte()
-
         codeIndex = writeIndex++
 
         code = 1
@@ -46,7 +38,11 @@ internal object COBS {
     return ret.copyOf(writeIndex)
   }
 
-  fun decode(input: ByteArray): Pair<DecodeStatus, ByteArray> {
+  fun decode(input: ByteArray): ByteArray? {
+    if (input.isEmpty()) {
+      return ByteArray(0)
+    }
+
     val ret = ByteArray(input.size)
 
     var readIndex = 0
@@ -56,24 +52,20 @@ internal object COBS {
       val code = input[readIndex].toInt() and 0xFF
 
       if (code == 0 || readIndex + code > input.size && readIndex + code - 1 != input.size) {
-        return Pair(DecodeStatus.ERROR, ByteArray(0))
+        return null
       }
 
       readIndex++
 
       for (i in 1 until code) {
-        if (readIndex >= input.size) {
-          return Pair(DecodeStatus.IN_PROGRESS, ret.copyOf(writeIndex))
-        }
-
         ret[writeIndex++] = input[readIndex++]
       }
 
-      if (code != 0xFF && readIndex < input.size) {
+      if (code < 0xFF && readIndex < input.size) {
         ret[writeIndex++] = 0
       }
     }
 
-    return Pair(DecodeStatus.COMPLETE, ret.copyOf(writeIndex))
+    return ret.copyOf(writeIndex)
   }
 }

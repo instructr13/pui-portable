@@ -1,6 +1,6 @@
 package dev.wycey.mido.fraiselait.builtins.commands
 
-import dev.wycey.mido.fraiselait.models.Serializable
+import dev.wycey.mido.fraiselait.builtins.models.Serializable
 import dev.wycey.mido.fraiselait.util.VariableByteBuffer
 
 public data class Command(

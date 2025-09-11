@@ -1,6 +1,6 @@
 package dev.wycey.mido.fraiselait.builtins
 
-import dev.wycey.mido.fraiselait.models.Deserializable
+import dev.wycey.mido.fraiselait.builtins.models.Deserializable
 import java.nio.ByteBuffer
 
 public data class FraiselaitDeviceState(

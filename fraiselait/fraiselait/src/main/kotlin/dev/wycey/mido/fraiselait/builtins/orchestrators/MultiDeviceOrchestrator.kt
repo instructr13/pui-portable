@@ -1,10 +1,9 @@
 package dev.wycey.mido.fraiselait.builtins.orchestrators
 
-import dev.wycey.mido.fraiselait.ConnectionStatus
-import dev.wycey.mido.fraiselait.DevicePortWatcher
-import dev.wycey.mido.fraiselait.SerialDevice
-import dev.wycey.mido.fraiselait.SerialPortSelection
+import dev.wycey.mido.fraiselait.builtins.ConnectionStatus
+import dev.wycey.mido.fraiselait.builtins.DevicePortWatcher
 import dev.wycey.mido.fraiselait.builtins.FraiselaitDevice
+import dev.wycey.mido.fraiselait.builtins.SerialPortSelection
 import dev.wycey.mido.fraiselait.builtins.commands.Command
 
 public open class MultiDeviceOrchestrator(
@@ -22,8 +21,7 @@ public open class MultiDeviceOrchestrator(
       FraiselaitDevice(
         serialRate,
         SerialPortSelection.Manual(port),
-        listOf(),
-        false
+        listOf()
       )
 
     device.onStatusChange { status ->
@@ -55,7 +53,13 @@ public open class MultiDeviceOrchestrator(
         }
 
         ConnectionStatus.DISPOSED -> {
-          if (_devices.remove(device.id!!) == null) {
+          if (device.id == null) {
+            println("Disposed device with no ID: ${device.port}")
+
+            return@onStatusChange
+          }
+
+          if (_devices.remove(device.id) == null) {
             throw IllegalStateException("Disposed device $device was not in the devices set")
           }
 
@@ -68,12 +72,10 @@ public open class MultiDeviceOrchestrator(
       }
     }
 
-    device.connect()
-
     return device
   }
 
-  protected open fun disposeSerialDevice(device: SerialDevice) {
+  protected open fun disposeSerialDevice(device: FraiselaitDevice) {
     device.dispose()
   }
 
@@ -116,7 +118,7 @@ public open class MultiDeviceOrchestrator(
     _namedDevices[name] = device
   }
 
-  public fun getNamedDevice(name: String): SerialDevice? = _namedDevices[name]
+  public fun getNamedDevice(name: String): FraiselaitDevice? = _namedDevices[name]
 
   public fun unnameDevice(name: String) {
     _namedDevices.remove(name)

@@ -1,4 +1,4 @@
-package dev.wycey.mido.fraiselait
+package dev.wycey.mido.fraiselait.builtins
 
 public sealed class SerialPortSelection {
   public data object FirstAvailable : SerialPortSelection()

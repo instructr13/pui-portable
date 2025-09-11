@@ -1,4 +1,4 @@
-package dev.wycey.mido.fraiselait.packet
+package dev.wycey.mido.fraiselait.builtins
 
 internal enum class PacketType(
   val code: UShort

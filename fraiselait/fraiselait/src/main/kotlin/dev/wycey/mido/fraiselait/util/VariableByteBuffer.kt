@@ -287,6 +287,20 @@ public class VariableByteBuffer
       buffer.rewind()
     }
 
+    public fun position(newPosition: Int) {
+      if (newPosition !in 0..size) {
+        throw IndexOutOfBoundsException("Position: $newPosition, Size: $size")
+      }
+
+      buffer.position(newPosition)
+    }
+
+    public fun compact() {
+      buffer.compact()
+
+      size = buffer.position()
+    }
+
     private fun ensureCapacity(minCapacity: Int) {
       if (minCapacity > capacity) {
         extend(minCapacity)

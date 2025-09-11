@@ -1,4 +1,4 @@
-package dev.wycey.mido.fraiselait
+package dev.wycey.mido.fraiselait.builtins
 
 import jssc.SerialPortList
 import kotlinx.coroutines.*
