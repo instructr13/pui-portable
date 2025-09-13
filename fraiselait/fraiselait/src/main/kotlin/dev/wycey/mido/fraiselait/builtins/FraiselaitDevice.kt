@@ -475,8 +475,12 @@ public class FraiselaitDevice
         return
       }
 
+      if (port == null) {
+        return
+      }
+
       if (serial == null) {
-        serial = FraiselaitSerialDevice(serialRate, port ?: throw IllegalStateException("Port not selected"))
+        serial = FraiselaitSerialDevice(serialRate, port!!)
 
         debugLog("Created serial device on port '$port'")
 
