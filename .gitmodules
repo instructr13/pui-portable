@@ -1,0 +1,6 @@
+[submodule "arduino/fraiselait/lib/tone-dynamic"]
+	path = arduino/fraiselait/lib/tone-dynamic
+	url = https://github.com/instructr13/rpi-pico-tone-dynamic
+[submodule "arduino/fraiselait/lib/pcomm"]
+	path = arduino/fraiselait/lib/pcomm
+	url = https://github.com/instructr13/rpi-pico-packet-communicator

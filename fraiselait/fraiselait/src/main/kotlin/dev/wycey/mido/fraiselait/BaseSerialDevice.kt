@@ -6,7 +6,8 @@ import dev.wycey.mido.fraiselait.packet.Frame
 import dev.wycey.mido.fraiselait.packet.Packet
 import dev.wycey.mido.fraiselait.util.VariableByteBuffer
 import jssc.SerialPort
-import jssc.SerialPortException
+import jssc.SerialPortEvent
+import jssc.SerialPortEventListener
 import jssc.SerialPortList
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -16,67 +17,48 @@ import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-public abstract class BaseSerialDevice(
-  public val serialRate: Int,
-  public val port: String
+internal abstract class BaseSerialDevice(
+  val serialRate: Int,
+  private val port: String
 ) {
-  public companion object {
+  companion object {
     private const val TYPE_DEBUG_ECHO: UShort = 0xFFFFu
 
-    private const val MAX_CHUNK_SIZE: UShort = 44u // 64 - 5 (cobs) - 14 (header+crc) - 1 (delimiter)
+    private const val MAX_CHUNK_SIZE: UShort = 38u // 64 - 5 (cobs) - 14 (header+crc) - 1 (delimiter) - 6 (additional)
     private const val MAX_FRAME_SIZE = 2048
     private val RX_FRAME_TIMEOUT = Duration.ofMillis(2000)
 
-    public const val VERSION: Int = 410
+    var enableDebugOutput: Boolean = false
 
     @JvmStatic
-    public var enableDebugOutput: Boolean = false
-
-    @JvmStatic
-    public fun list(): Array<String> = SerialPortList.getPortNames()
+    fun list(): Array<String> = SerialPortList.getPortNames()
   }
 
   private val frameTable = mutableMapOf<UInt, Frame>()
-  private val readerRunning = AtomicBoolean(false)
-  private var readerThread: Thread? = null
   private var scheduler: ScheduledExecutorService? = null
 
-  private inner class ReaderThread : Thread() {
+  private inner class ReaderThread : SerialPortEventListener {
     private val rxBuffer = VariableByteBuffer(ByteOrder.LITTLE_ENDIAN)
 
-    init {
-      name = "SerialDevice-reader-$port"
-      isDaemon = true
-    }
+    override fun serialEvent(e: SerialPortEvent) {
+      if (disposed) return
 
-    override fun run() {
-      while (readerRunning.get()) {
-        if (interrupted() || disposed) break
+      try {
+        if (!e.isRXCHAR) return
 
-        try {
-          val available = serial.inputBufferBytesCount
+        val available = e.eventValue
 
-          if (available > 0) {
-            receiveRawData(available)
+        if (available <= 0) return
 
-            if (rxBuffer.size > 0) {
-              processRXBuffer()
-            }
-          } else {
-            // No data available, sleep a bit
-            sleep(1) // 1ms sleep
-          }
-        } catch (e: InterruptedException) {
-          break
-        } catch (e: SerialPortException) {
-          dispose()
+        receiveRawData(available)
 
-          break
-        } catch (e: Exception) {
-          println("Error in listener thread: $e")
-
-          e.printStackTrace()
+        if (rxBuffer.size > 0) {
+          processRXBuffer()
         }
+      } catch (e: Exception) {
+        println("Error in serial listener: $e")
+
+        e.printStackTrace()
       }
     }
 
@@ -132,20 +114,22 @@ public abstract class BaseSerialDevice(
     }
 
     override fun run() {
-      while (handlerRunning.get()) {
-        if (interrupted() || disposed) break
-
-        try {
+      try {
+        while (handlerRunning.get() && !disposed) {
           val data = packetQueue.poll(100, TimeUnit.MILLISECONDS) ?: continue
 
-          handlePacket(data)
-        } catch (e: InterruptedException) {
-          break
-        } catch (e: Exception) {
-          println("Error in handler thread: $e")
-
-          e.printStackTrace()
+          if (data.isNotEmpty()) {
+            handlePacket(data)
+          }
         }
+      } catch (_: InterruptedException) {
+        // Interrupted, exit
+      } catch (e: Exception) {
+        println("Error in handler thread: $e")
+
+        e.printStackTrace()
+      } finally {
+        handlerRunning.set(false)
       }
     }
 
@@ -187,7 +171,7 @@ public abstract class BaseSerialDevice(
       val crc16 = packetBuffer.short.toUShort()
 
       if (!CRC16CCITT.verify(data, crc16)) {
-        debugLog("CRC16 mismatch")
+        debugLog("CRC16 mismatch, expected: $crc16, computed: ${CRC16CCITT.compute(data)}")
 
         frameTable.remove(frameId)
 
@@ -260,7 +244,7 @@ public abstract class BaseSerialDevice(
     }
 
   @Volatile
-  public var available: Boolean = false
+  var available = false
 
   private var serial = SerialPort(port)
 
@@ -270,6 +254,7 @@ public abstract class BaseSerialDevice(
   init {
     try {
       serial.openPort()
+      serial.addEventListener(ReaderThread(), SerialPort.MASK_RXCHAR)
       serial.setParams(
         serialRate,
         SerialPort.DATABITS_8,
@@ -294,7 +279,7 @@ public abstract class BaseSerialDevice(
 
   protected abstract fun onRecv(packet: Packet)
 
-  public fun send(packet: Packet) {
+  fun send(packet: Packet) {
     if (disposed) {
       throw IllegalStateException("Device is disposed")
     }
@@ -308,7 +293,7 @@ public abstract class BaseSerialDevice(
     )
   }
 
-  public open fun start() {
+  fun start() {
     if (disposed) {
       throw IllegalStateException("Device is disposed")
     }
@@ -316,10 +301,9 @@ public abstract class BaseSerialDevice(
     if (available) return
 
     serial.setDTR(true)
-    startReaders()
+    startHandler()
 
     scheduler = Executors.newSingleThreadScheduledExecutor()
-
     scheduler!!.scheduleAtFixedRate(::cleanupStaleFrames, 1, 1, TimeUnit.SECONDS)
 
     available = true
@@ -327,41 +311,42 @@ public abstract class BaseSerialDevice(
     debugLog("Started communication")
   }
 
-  public open fun stop() {
+  open fun stop() {
     if (disposed) {
       throw IllegalStateException("Device is disposed")
     }
 
     if (!available) return
 
-    stopReaders()
-    serial.setDTR(false)
-
+    stopHandler()
     stopWriter()
-
-    available = false
 
     scheduler?.shutdownNow()
     scheduler = null
+
+    if (serial.isOpened) {
+      serial.removeEventListener()
+      serial.setDTR(false)
+    }
+
+    available = false
 
     debugLog("Stopped communication")
   }
 
-  public open fun dispose() {
+  open fun dispose() {
     if (disposed) return
 
+    stop()
+
     disposed = true
-    available = false
 
-    serial.setDTR(false)
-    stopReaders()
-
-    stopWriter()
-
-    scheduler?.shutdownNow()
-    scheduler = null
-
-    serial.closePort()
+    try {
+      if (serial.isOpened) {
+        serial.closePort()
+      }
+    } catch (_: Exception) {
+    }
 
     debugLog("Disposed")
   }
@@ -382,23 +367,17 @@ public abstract class BaseSerialDevice(
     }
   }
 
-  private fun startReaders() {
-    if (readerRunning.compareAndSet(false, true)) {
-      readerThread = ReaderThread().apply { start() }
-    }
-
+  private fun startHandler() {
     if (handlerRunning.compareAndSet(false, true)) {
       handlerThread = HandlerThread().apply { start() }
     }
   }
 
-  private fun stopReaders() {
-    readerRunning.set(false)
-    readerThread?.interrupt()
-    readerThread = null
-
+  private fun stopHandler() {
     handlerRunning.set(false)
+    packetQueue.offer(ByteArray(0)) // dummy poll
     handlerThread?.interrupt()
+    handlerThread?.join(500)
     handlerThread = null
   }
 
@@ -438,7 +417,7 @@ public abstract class BaseSerialDevice(
 
   private fun stopWriter() {
     writerExecutor.shutdownNow()
-
+    writerExecutor.awaitTermination(500, TimeUnit.MILLISECONDS)
     writerRunning.set(false)
 
     writeQueue.clear()

@@ -31,13 +31,15 @@ public class FraiselaitDevice
     private val portSelection: SerialPortSelection = SerialPortSelection.FirstAvailable,
     hostCapabilities: List<BaseCapability> = listOf()
   ) {
-    private companion object {
-      const val COMMAND_DATA_GET_IMMEDIATE: UShort = 0x0090u
-      const val COMMAND_DATA_GET_LOOP_OFF: UShort = 0x0092u
-      const val COMMAND_DATA_GET_LOOP_ON: UShort = 0x0093u
-      const val COMMAND_DATA_SET: UShort = 0x00E0u
+    public companion object {
+      public const val VERSION: Int = 410
 
-      const val RESPONSE_DATA_SEND: UShort = 0x00F0u
+      private const val COMMAND_DATA_GET_IMMEDIATE: UShort = 0x0090u
+      private const val COMMAND_DATA_GET_LOOP_OFF: UShort = 0x0092u
+      private const val COMMAND_DATA_GET_LOOP_ON: UShort = 0x0093u
+      private const val COMMAND_DATA_SET: UShort = 0x00E0u
+
+      private const val RESPONSE_DATA_SEND: UShort = 0x00F0u
     }
 
     private val onStatusChangeCallbacks = mutableListOf<(ConnectionStatus) -> Unit>()

@@ -16,64 +16,60 @@ public open class MultiDeviceOrchestrator(
   private val _namedDevices: MutableMap<String, FraiselaitDevice> = mutableMapOf()
   public val namedDevices: Map<String, FraiselaitDevice> = _namedDevices
 
-  protected open fun setupSerialDevice(port: String): FraiselaitDevice {
-    val device =
-      FraiselaitDevice(
-        serialRate,
-        SerialPortSelection.Manual(port),
-        listOf()
-      )
-
-    device.onStatusChange { status ->
-      when (status) {
-        ConnectionStatus.CONNECTING -> {
-          println("Connecting to device: ${device.port}")
-        }
-
-        ConnectionStatus.CONNECTED -> {
-          if (_devices.put(device.id!!, device) != null) {
-            throw IllegalStateException("New device $device is already in the devices set")
+  protected open fun setupSerialDevice(port: String): FraiselaitDevice =
+    FraiselaitDevice(
+      serialRate,
+      SerialPortSelection.Manual(port),
+      listOf()
+    ).apply {
+      onStatusChange { status ->
+        when (status) {
+          ConnectionStatus.CONNECTING -> {
+            println("Connecting to device: $port")
           }
 
-          device.retrieveStateForever = true
+          ConnectionStatus.CONNECTED -> {
+            if (_devices.put(id!!, this) != null) {
+              throw IllegalStateException("New device $this is already in the devices set")
+            }
 
-          println("New device: ${device.id}")
-        }
+            retrieveStateForever = true
 
-        ConnectionStatus.NOT_CONNECTED -> {
-          if (_devices.remove(device.id!!) == null) {
-            throw IllegalStateException("Disconnected device $device was not in the devices set")
+            println("New device: $id")
           }
 
-          println("Disconnected device: ${device.id}")
+          ConnectionStatus.NOT_CONNECTED -> {
+            if (_devices.remove(id!!) == null) {
+              throw IllegalStateException("Disconnected device $this was not in the devices set")
+            }
 
-          if (_namedDevices.entries.removeIf { it.value.id == device.id }) {
-            println("Removed named device: ${device.id}")
-          }
-        }
+            println("Disconnected device: $id")
 
-        ConnectionStatus.DISPOSED -> {
-          if (device.id == null) {
-            println("Disposed device with no ID: ${device.port}")
-
-            return@onStatusChange
+            if (_namedDevices.entries.removeIf { it.value.id == id }) {
+              println("Removed named device: $id")
+            }
           }
 
-          if (_devices.remove(device.id) == null) {
-            throw IllegalStateException("Disposed device $device was not in the devices set")
-          }
+          ConnectionStatus.DISPOSED -> {
+            if (id == null) {
+              println("Disposed device with no ID: $port")
 
-          println("Removed device: ${device.id}")
+              return@onStatusChange
+            }
 
-          if (_namedDevices.entries.removeIf { it.value.id == device.id }) {
-            println("Removed device name: ${device.id}")
+            if (_devices.remove(id) == null) {
+              throw IllegalStateException("Disposed device $this was not in the devices set")
+            }
+
+            println("Removed device: $id")
+
+            if (_namedDevices.entries.removeIf { it.value.id == id }) {
+              println("Removed device name: $id")
+            }
           }
         }
       }
     }
-
-    return device
-  }
 
   protected open fun disposeSerialDevice(device: FraiselaitDevice) {
     device.dispose()
