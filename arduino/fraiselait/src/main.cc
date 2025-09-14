@@ -149,8 +149,6 @@ void process_data(const uint8_t flags, pcomm::bytes::Decoder &decoder) {
   if (get_n_bit(flags, 2)) {
     // No tone
     rp2040.fifo.push_nb(FIFO_NO_TONE);
-
-    return;
   }
 
   if (get_n_bit(flags, 3)) {
@@ -229,6 +227,8 @@ void reset_state() {
   rp2040.fifo.push_nb(FIFO_NO_TONE);
   rp2040.fifo.push_nb(FIFO_RGB_LED);
   rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&color_data));
+  rp2040.fifo.push_nb(FIFO_WAVEFORM);
+  rp2040.fifo.push_nb(static_cast<uint32_t>(WaveformType::Square));
 }
 
 void setup() {
@@ -402,11 +402,11 @@ void loop1() {
     if (cmd == FIFO_NO_TONE) {
       command_no_tone();
     } else if (cmd == FIFO_TONE) {
-      command_tone(*reinterpret_cast<ToneData *>(rp2040.fifo.pop()));
+      command_tone(*reinterpret_cast<const ToneData *>(rp2040.fifo.pop()));
     } else if (cmd == FIFO_LED_BUILTIN) {
       command_change_led_builtin(rp2040.fifo.pop());
     } else if (cmd == FIFO_RGB_LED) {
-      command_change_color(*reinterpret_cast<RGBColorData *>(rp2040.fifo.pop()));
+      command_change_color(*reinterpret_cast<const RGBColorData *>(rp2040.fifo.pop()));
     } else if (cmd == FIFO_WAVEFORM) {
       command_change_waveform(static_cast<WaveformType>(rp2040.fifo.pop()));
     }
