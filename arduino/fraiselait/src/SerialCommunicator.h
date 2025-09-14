@@ -42,6 +42,11 @@ public:
   virtual ~IDeserializable() = default;
 
   virtual bool deserialize(pcomm::bytes::Decoder &decoder) = 0;
+
+  virtual bool deserialize(pcomm::bytes::Decoder &decoder) volatile {
+    // Default implementation for volatile objects
+    return const_cast<IDeserializable *>(this)->deserialize(decoder);
+  }
 };
 
 class ICapability : public ISerializable, public IDeserializable {

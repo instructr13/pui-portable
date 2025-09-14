@@ -1,12 +1,9 @@
-#define ENABLE_DEBUG_LOG false
-
 #include <Arduino.h>
 
 #include <array>
 #include <functional>
-#include <optional>
 
-#define PCOMM_ENABLE_DEBUG_LOG ENABLE_DEBUG_LOG
+#define PCOMM_ENABLE_DEBUG_LOG false
 
 #include "SerialCommunicator.h"
 #include "constants.h"
@@ -39,12 +36,12 @@ struct DeviceData final : ISerializable {
 struct ToneData final : IDeserializable {
   float frequency{};
   float volume = 1;
-  std::optional<uint32_t> duration;
+  uint32_t duration{};
 
   ToneData() = default;
 
   explicit ToneData(const float frequency, const float volume = 1,
-       const std::optional<uint32_t> duration = std::nullopt)
+       const uint32_t duration = 0)
       : frequency(frequency), volume(volume), duration(duration) {}
 
   bool deserialize(pcomm::bytes::Decoder &decoder) override {
@@ -53,15 +50,13 @@ struct ToneData final : IDeserializable {
 
     frequency = decoder.pop_number<float>();
     volume = decoder.pop_number<float>();
-
-    const auto raw_duration = decoder.pop_number<uint32_t>();
-
-    if (raw_duration > 0)
-      duration = raw_duration;
-    else
-      duration.reset();
+    duration = decoder.pop_number<uint32_t>();
 
     return true;
+  }
+
+  bool deserialize(pcomm::bytes::Decoder &decoder) volatile override {
+    return const_cast<ToneData *>(this)->deserialize(decoder);
   }
 };
 
@@ -81,6 +76,10 @@ struct RGBColorData final : IDeserializable {
     b = decoder.pop_number<uint8_t>();
 
     return true;
+  }
+
+  bool deserialize(pcomm::bytes::Decoder &decoder) volatile override {
+    return const_cast<RGBColorData *>(this)->deserialize(decoder);
   }
 };
 
@@ -126,8 +125,10 @@ bool get_n_bit(const uint8_t flags, const size_t n) {
   return (flags >> n) & 0b1;
 }
 
-static ToneData tone_data;
-static RGBColorData color_data;
+static volatile auto waveform_data = WaveformType::Square;
+static volatile ToneData tone_data;
+static volatile bool led_data = false;
+static volatile RGBColorData color_data;
 
 void process_data(const uint8_t flags, pcomm::bytes::Decoder &decoder) {
   // 0 bit are currently unused
@@ -142,16 +143,15 @@ void process_data(const uint8_t flags, pcomm::bytes::Decoder &decoder) {
       return;
     }
 
+    waveform_data = static_cast<WaveformType>(decoder.pop_number<uint16_t>());
+
     rp2040.fifo.push_nb(FIFO_WAVEFORM);
-    rp2040.fifo.push_nb(static_cast<uint32_t>(decoder.pop_number<uint16_t>()));
   }
 
   if (get_n_bit(flags, 2)) {
     // No tone
     rp2040.fifo.push_nb(FIFO_NO_TONE);
-  }
-
-  if (get_n_bit(flags, 3)) {
+  } else if (get_n_bit(flags, 3)) {
     // Tone
 
     if (!tone_data.deserialize(decoder)) {
@@ -162,7 +162,6 @@ void process_data(const uint8_t flags, pcomm::bytes::Decoder &decoder) {
     }
 
     rp2040.fifo.push_nb(FIFO_TONE);
-    rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&tone_data));
   }
 
   if (get_n_bit(flags, 4)) {
@@ -174,10 +173,9 @@ void process_data(const uint8_t flags, pcomm::bytes::Decoder &decoder) {
       return;
     }
 
-    const auto led_on = decoder.pop_bool();
+    led_data = decoder.pop_bool();
 
     rp2040.fifo.push_nb(FIFO_LED_BUILTIN);
-    rp2040.fifo.push_nb(led_on);
   }
 
   if (get_n_bit(flags, 5)) {
@@ -191,7 +189,6 @@ void process_data(const uint8_t flags, pcomm::bytes::Decoder &decoder) {
     }
 
     rp2040.fifo.push_nb(FIFO_RGB_LED);
-    rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&color_data));
   }
 }
 
@@ -214,21 +211,23 @@ public:
 FraiselaitDeviceCapability fraiselaitDeviceCap;
 
 void reset_state() {
+  waveform_data = WaveformType::Square;
+
   tone_data.frequency = 0;
   tone_data.volume = 1;
-  tone_data.duration.reset();
+  tone_data.duration = 0;
 
   color_data.r = 0;
   color_data.g = 0;
   color_data.b = 0;
 
+  led_data = false;
+
   send_data_forever = false;
 
   rp2040.fifo.push_nb(FIFO_NO_TONE);
   rp2040.fifo.push_nb(FIFO_RGB_LED);
-  rp2040.fifo.push_nb(reinterpret_cast<uint32_t>(&color_data));
   rp2040.fifo.push_nb(FIFO_WAVEFORM);
-  rp2040.fifo.push_nb(static_cast<uint32_t>(WaveformType::Square));
 }
 
 void setup() {
@@ -324,28 +323,23 @@ static tone_dynamic::Speaker sp{PIN_SPEAKER, true};
 
 void command_no_tone() { sp.stop(); }
 
-void command_tone(const ToneData &data) {
+void command_tone(const volatile ToneData &data) {
   sp.set_frequency(data.frequency);
   sp.set_volume(data.volume);
-
-  if (data.duration) {
-    sp.play(data.duration.value());
-  } else {
-    sp.play();
-  }
+  sp.play(data.duration);
 }
 
-void command_change_color(const RGBColorData &data) {
+void command_change_color(const volatile RGBColorData &data) {
   analogWrite(PIN_LED_RED, data.r);
   analogWrite(PIN_LED_GREEN, data.g);
   analogWrite(PIN_LED_BLUE, data.b);
 }
 
-void command_change_led_builtin(const bool data) {
+void command_change_led_builtin(const volatile bool &data) {
   digitalWrite(LED_BUILTIN, data);
 }
 
-void command_change_waveform(const WaveformType type) {
+void command_change_waveform(const volatile WaveformType &type) {
   switch (type) {
     case WaveformType::Square:
       sp.set_waveform(tone_dynamic::SQUARE_WAVEFORM);
@@ -402,13 +396,13 @@ void loop1() {
     if (cmd == FIFO_NO_TONE) {
       command_no_tone();
     } else if (cmd == FIFO_TONE) {
-      command_tone(*reinterpret_cast<const ToneData *>(rp2040.fifo.pop()));
+      command_tone(tone_data);
     } else if (cmd == FIFO_LED_BUILTIN) {
-      command_change_led_builtin(rp2040.fifo.pop());
+      command_change_led_builtin(led_data);
     } else if (cmd == FIFO_RGB_LED) {
-      command_change_color(*reinterpret_cast<const RGBColorData *>(rp2040.fifo.pop()));
+      command_change_color(color_data);
     } else if (cmd == FIFO_WAVEFORM) {
-      command_change_waveform(static_cast<WaveformType>(rp2040.fifo.pop()));
+      command_change_waveform(waveform_data);
     }
   }
 
