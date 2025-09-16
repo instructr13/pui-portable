@@ -9,6 +9,9 @@ import dev.wycey.mido.fraiselait.builtins.commands.Command
 public open class MultiDeviceOrchestrator(
   public val serialRate: Int
 ) {
+  private val newDeviceCallbacks: MutableList<(FraiselaitDevice) -> Unit> = mutableListOf()
+  private val removedDeviceCallbacks: MutableList<(FraiselaitDevice) -> Unit> = mutableListOf()
+
   private val _devices: MutableMap<String, FraiselaitDevice> = mutableMapOf()
   public val devices: Set<FraiselaitDevice>
     get() = _devices.values.toSet()
@@ -36,6 +39,8 @@ public open class MultiDeviceOrchestrator(
             retrieveStateForever = true
 
             println("New device: $id")
+
+            newDeviceCallbacks.forEach { it(this) }
           }
 
           ConnectionStatus.NOT_CONNECTED -> {
@@ -43,11 +48,13 @@ public open class MultiDeviceOrchestrator(
               throw IllegalStateException("Disconnected device $this was not in the devices set")
             }
 
-            println("Disconnected device: $id")
+            println("Removed device: $id")
 
             if (_namedDevices.entries.removeIf { it.value.id == id }) {
               println("Removed named device: $id")
             }
+
+            removedDeviceCallbacks.forEach { it(this) }
           }
 
           ConnectionStatus.DISPOSED -> {
@@ -66,6 +73,8 @@ public open class MultiDeviceOrchestrator(
             if (_namedDevices.entries.removeIf { it.value.id == id }) {
               println("Removed device name: $id")
             }
+
+            removedDeviceCallbacks.forEach { it(this) }
           }
         }
       }
@@ -118,6 +127,14 @@ public open class MultiDeviceOrchestrator(
 
   public fun unnameDevice(name: String) {
     _namedDevices.remove(name)
+  }
+
+  public fun onNewDevice(callback: (FraiselaitDevice) -> Unit) {
+    newDeviceCallbacks.add(callback)
+  }
+
+  public fun onRemovedDevice(callback: (FraiselaitDevice) -> Unit) {
+    removedDeviceCallbacks.add(callback)
   }
 
   public fun start() {
