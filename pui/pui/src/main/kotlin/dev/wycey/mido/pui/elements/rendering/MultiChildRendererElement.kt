@@ -14,6 +14,7 @@ public open class MultiChildRendererElement(
   internal val rendererContract
     get() = renderer as ContainerRendererContract<RendererObject>
 
+  @Suppress("ktlint:standard:backing-property-naming")
   private var _children = mutableListOf<Element>()
   protected val children: List<Element> get() = _children.toList()
 
