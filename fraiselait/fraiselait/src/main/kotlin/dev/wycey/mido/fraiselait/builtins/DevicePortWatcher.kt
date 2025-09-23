@@ -52,7 +52,7 @@ internal object DevicePortWatcher {
           ports = newSerialList
         }
 
-        delay(10)
+        delay(1000)
       }
     }
 
